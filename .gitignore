@@ -34,3 +34,9 @@ venv/
 
 # System files
 Thumbs.db
+
+# Folders
+DLC-Atanu-*/
+
+# Environment files
+*.yml
