@@ -31,9 +31,9 @@ def update_outliers_to_db():
             acc, jerk = calculate_acc_jerk_outliers(path)
             if pd.notna(acc) and pd.notna(jerk):
                 updates.append((int(acc), int(jerk), id_))
-                print(f"✅ ID {id_}: acc={acc}, jerk={jerk}")
+                print(f"ID {id_}: acc={acc}, jerk={jerk}")
         except Exception as e:
-            print(f"⚠️ ID {id_}: error — {e}")
+            print(f"ID {id_}: error — {e}")
 
     # Update all rows efficiently in one step
     if updates:
@@ -49,10 +49,10 @@ def update_outliers_to_db():
             updates
         )
         conn.commit()
-        print(f"🎉 Updated {len(updates)} rows.")
+        print(f"Updated {len(updates)} rows.")
 
     else:
-        print("⚠️ No updates to apply.")
+        print("No updates to apply.")
 
     cur.close()
     conn.close()
