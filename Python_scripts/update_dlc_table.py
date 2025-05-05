@@ -19,37 +19,6 @@ def is_valid_csv(path, id_):
         return False
     return True
 
-def update_column(column_name):
-    conn = psycopg2.connect(dbname="deeplabcut_db", user="postgres", password=1234)
-    cursor = conn.cursor()
-
-    if column_name == "distance":
-        updates = []
-        cursor.execute("""
-            ALTER TABLE dlc_files ADD COLUMN IF NOT EXISTS distance FLOAT;
-        """)
-        cursor.execute("SELECT id, normalized_path FROM dlc_files")
-        rows = cursor.fetchall()
-
-        for row in rows:
-            id_, path = row
-            if not is_valid_csv(path, id_):
-                continue
-            try:
-                total_distance = calculate_total_distance_20min(path)
-            except Exception as e:
-                print(f"Error for ID {id_}: {e}")
-                continue
-
-            if total_distance is not None:
-                updates.append((total_distance, id_))
-                print(f"Updated distance for ID {id_}: {total_distance:.2f}")
-            else:
-                print(f"Skipping ID {id_} — calculation failed.")
-
-        if updates:
-            cursor.executemany("UPDATE dlc_files SET distance = %s WHERE id = %s", updates)
-
     elif column_name == "stop_count":
         updates = []
         cursor.execute("""
