@@ -5,8 +5,8 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilename, askdirectory
 
 def split_videos_by_quadrants(input_dir=None, output_dir=None, mode=None):
-    if mode not in {"1", "3"}:
-        print("Invalid mode. Use '1' for folder mode or '3' for single file mode.")
+    if mode not in {"1", "2"}:
+        print("Invalid mode. Use '1' for folder mode or '2' for single file mode.")
         return
 
     root = Tk()
@@ -29,7 +29,7 @@ def split_videos_by_quadrants(input_dir=None, output_dir=None, mode=None):
             input_path = os.path.join(input_dir, video_file)
             process_video(input_path, output_dir)
 
-    elif mode == "3":
+    elif mode == "2":
         if not input_dir:
             input_file = askopenfilename(title="Select a Video File", filetypes=[("MP4 files", "*.mp4")])
             if not input_file:
@@ -101,4 +101,4 @@ if __name__ == "__main__":
     # split_videos_by_quadrants(input_dir="path_to_file.mp4", output_dir="your_output_folder", mode="3")
 
     # For interactive GUI selection
-    split_videos_by_quadrants(mode="1")  # or "3"
+    split_videos_by_quadrants(mode="1")  # or "2"
