@@ -1,3 +1,6 @@
+import re
+from datetime import datetime
+
 def parse_video_name(video_name):
     task, date_str, name, health = None, None, None, None
 
@@ -13,7 +16,7 @@ def parse_video_name(video_name):
         health = "saline" if match1.group("code") == "Y" else "ghrelin"
 
     else:
-        # Case 2: With S%dY or S%dP in the middle — e.g. FoodOnly_8_28_24_S3P_Cyan_Trial1.mp4
+        # Case 2: Format like FoodOnly_8_28_24_S3P_Cyan_Trial1.mp4
         match2 = re.match(r'^(?P<task>[A-Za-z]+)_(?P<month>\d{1,2})_(?P<day>\d{1,2})_(?P<year>\d{2})_(S\d+[PY])_(?P<name>[A-Za-z]+)', video_name)
         if match2:
             task = match2.group("task")
@@ -30,7 +33,7 @@ def parse_video_name(video_name):
                 health = "ghrelin"
 
         else:
-            # Case 3: Same as above but no Trial#, e.g. ToyLight_12_3_24_S3Y_Lilac.mp4
+            # Case 3: Format like ToyLight_12_3_24_S3Y_Lilac.mp4 (no Trial#)
             match3 = re.match(r'^(?P<task>[A-Za-z]+)_(?P<month>\d{1,2})_(?P<day>\d{1,2})_(?P<year>\d{2})_(?P<session>S\d+[PY])_(?P<name>[A-Za-z]+)', video_name)
             if match3:
                 task = match3.group("task")
@@ -45,5 +48,19 @@ def parse_video_name(video_name):
                     health = "saline"
                 elif session_code.endswith("P"):
                     health = "ghrelin"
+            else:
+                # Case 4: Format like FoodLight_9_25_24_P_Cat.avi
+                match4 = re.match(
+                    r'^(?P<task>[A-Za-z]+)_(?P<month>\d{1,2})_(?P<day>\d{1,2})_(?P<year>\d{2})_(?P<code>[YP])_(?P<name>[A-Za-z]+)',
+                    video_name
+                )
+                if match4:
+                    task = match4.group("task")
+                    month = int(match4.group("month"))
+                    day = int(match4.group("day"))
+                    year = int("20" + match4.group("year"))
+                    date_str = datetime(year, month, day).strftime("%Y-%m-%d")
+                    name = match4.group("name")
+                    health = "saline" if match4.group("code") == "Y" else "ghrelin"
 
     return task, date_str, name, health
