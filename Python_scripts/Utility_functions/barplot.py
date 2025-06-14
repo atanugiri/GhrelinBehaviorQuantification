@@ -1,3 +1,6 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
 def barplot(n1=30, n2=30, mu1=0, mu2=1, std1=1.0, std2=1.0):
     """
     Simulate two arrays of normally distributed values, then plot their means with standard error bars.
