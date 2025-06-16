@@ -9,7 +9,7 @@ def parse_dlc_csv(csv_path, frame_rate, bodyparts, likelihood_threshold=0.9):
     df = pd.read_csv(csv_path, header=[1, 2])  # ✅ Skip scorer row
 
     num_frames = len(df)
-    t = np.arange(num_frames) / frame_rate
+    t = np.round(np.arange(num_frames) / frame_rate, 3)
 
     rows = []
     for i in range(num_frames):
@@ -21,8 +21,8 @@ def parse_dlc_csv(csv_path, frame_rate, bodyparts, likelihood_threshold=0.9):
                 p = df[part]['likelihood'].iloc[i]
 
                 if p >= likelihood_threshold:
-                    row[f"{part.lower()}_x"] = x
-                    row[f"{part.lower()}_y"] = y
+                    row[f"{part.lower()}_x"] = round(x, 3)
+                    row[f"{part.lower()}_y"] = round(x, 3)
                 else:
                     row[f"{part.lower()}_x"] = np.nan
                     row[f"{part.lower()}_y"] = np.nan
