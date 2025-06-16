@@ -20,10 +20,10 @@ def insert_dlc_arrays(conn, video_id, df_parsed, bodyparts):
     query = f"""
         UPDATE dlc_table
         SET {set_clause}
-        WHERE video_id = %s;
+        WHERE id = %s;
     """
 
-    values = [data[col] for col in columns] + [video_id]
+    values = [data[col] for col in columns] + [int(video_id)]
 
     try:
         cursor.execute(query, values)
