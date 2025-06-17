@@ -1,5 +1,3 @@
-print("parse_dlc_csv module loaded") # temp
-
 import pandas as pd
 import numpy as np
 
@@ -22,7 +20,7 @@ def parse_dlc_csv(csv_path, frame_rate, bodyparts, likelihood_threshold=0.9):
 
                 if p >= likelihood_threshold:
                     row[f"{part.lower()}_x"] = round(x, 3)
-                    row[f"{part.lower()}_y"] = round(x, 3)
+                    row[f"{part.lower()}_y"] = round(y, 3)
                 else:
                     row[f"{part.lower()}_x"] = np.nan
                     row[f"{part.lower()}_y"] = np.nan
