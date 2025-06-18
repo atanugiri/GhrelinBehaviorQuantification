@@ -1,19 +1,13 @@
 import numpy as np
 import pandas as pd
+import cv2
 
 def normalize_bodypart_by_id(conn, id, bodypart='head'):
     """
-    Normalize the (x, y) coordinates of a body part using min-max normalization
-    bounded by the 4 maze corner coordinates (Corner1–Corner4).
-
-    Args:
-        conn: psycopg2 or SQLAlchemy connection
-        id: trial ID
-        bodypart: body part name (e.g., 'head')
-
-    Returns:
-        x_norm, y_norm: normalized numpy arrays of the same length as original trace
+    Normalize (x, y) trajectory of a bodypart using homography transform
+    based on the median positions of Corner1–Corner4.
     """
+
     def safe_array(val):
         if isinstance(val, (list, np.ndarray)):
             return np.array(val)
@@ -22,6 +16,7 @@ def normalize_bodypart_by_id(conn, id, bodypart='head'):
         except Exception:
             raise ValueError(f"Cannot convert: {val}")
 
+    # Query bodypart + corners
     query = f"""
     SELECT 
         {bodypart}_x, {bodypart}_y,
@@ -30,10 +25,9 @@ def normalize_bodypart_by_id(conn, id, bodypart='head'):
         corner3_x, corner3_y,
         corner4_x, corner4_y
     FROM dlc_table
-    WHERE id = {id}
+    WHERE id = {id};
     """
     df = pd.read_sql_query(query, conn)
-
     if df.empty:
         print(f"❌ No data found for ID {id}")
         return None, None
@@ -41,36 +35,42 @@ def normalize_bodypart_by_id(conn, id, bodypart='head'):
     try:
         row = df.iloc[0]
 
-        # Interpolate body part trace
+        # Bodypart trajectory
         x_vals = pd.Series(safe_array(row[f"{bodypart}_x"])).interpolate(limit_direction='both').to_numpy()
         y_vals = pd.Series(safe_array(row[f"{bodypart}_y"])).interpolate(limit_direction='both').to_numpy()
 
-        # Corner arrays
-        c1x = safe_array(row['corner1_x'])
-        c1y = safe_array(row['corner1_y'])
-        c2x = safe_array(row['corner2_x'])
-        c2y = safe_array(row['corner2_y'])
-        c3x = safe_array(row['corner3_x'])
-        c3y = safe_array(row['corner3_y'])
-        c4x = safe_array(row['corner4_x'])
-        c4y = safe_array(row['corner4_y'])
+        # Corner medians
+        corners = []
+        for i in range(1, 5):
+            cx = safe_array(row[f"corner{i}_x"])
+            cy = safe_array(row[f"corner{i}_y"])
+            corners.append([np.nanmedian(cx), np.nanmedian(cy)])
 
-        # Define min/max bounds from corners
-        x_min = np.nanmin([np.nanmin(c1x), np.nanmin(c2x), np.nanmin(c3x), np.nanmin(c4x)])
-        x_max = np.nanmax([np.nanmax(c1x), np.nanmax(c2x), np.nanmax(c3x), np.nanmax(c4x)])
-        y_min = np.nanmin([np.nanmin(c1y), np.nanmin(c2y), np.nanmin(c3y), np.nanmin(c4y)])
-        y_max = np.nanmax([np.nanmax(c1y), np.nanmax(c2y), np.nanmax(c3y), np.nanmax(c4y)])
+        src_pts = np.array(corners, dtype=np.float32)
 
-        x_range = x_max - x_min
-        y_range = y_max - y_min
-
-        if x_range == 0 or y_range == 0:
-            print(f"❌ Invalid normalization range for ID {id}")
+        if np.isnan(src_pts).any():
+            print(f"❌ Invalid corner values for ID {id}")
             return None, None
 
-        x_norm = (x_vals - x_min) / x_range
-        y_norm = (y_vals - y_min) / y_range
+        # Match your annotation order: top-right → top-left → bottom-left → bottom-right
+        dst_pts = np.array([
+            [1, 0],  # corner1 (top-right)
+            [0, 0],  # corner2 (top-left)
+            [0, 1],  # corner3 (bottom-left)
+            [1, 1],  # corner4 (bottom-right)
+        ], dtype=np.float32)
 
+        # Compute homography
+        H, _ = cv2.findHomography(src_pts, dst_pts)
+        if H is None:
+            print(f"❌ Homography computation failed for ID {id}")
+            return None, None
+
+        # Transform trajectory
+        points = np.vstack([x_vals, y_vals]).T.astype(np.float32)  # shape (N, 2)
+        norm_pts = cv2.perspectiveTransform(points[:, None, :], H).squeeze()
+
+        x_norm, y_norm = norm_pts[:, 0], norm_pts[:, 1]
         return x_norm, y_norm
 
     except Exception as e:
