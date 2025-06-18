@@ -41,3 +41,4 @@ def insert_norm_dlc_arrays(ids, conn, bodypart="head"):
 
     conn.commit()
     cursor.close()
+                
