@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-def compute_motion_features(conn, id, bodypart_x='head_x_norm', bodypart_y='head_y_norm', time_limit=480.0):
+def compute_motion_features(conn, id, bodypart_x='head_x_norm', bodypart_y='head_y_norm', time_limit=1200.0):
     """
     Compute total distance, average velocity, and cumulative distance array
     from body part coordinates and time stored as arrays.
@@ -51,5 +51,9 @@ def compute_motion_features(conn, id, bodypart_x='head_x_norm', bodypart_y='head
     average_velocity = np.mean(velocity)
 
     cumulative_distance = np.cumsum(np.insert(distance, 0, 0))
+
+    total_distance = float(total_distance)
+    average_velocity = float(average_velocity)
+    cumulative_distance = np.round(cumulative_distance, 3).astype(float).tolist()
 
     return total_distance, average_velocity, cumulative_distance
