@@ -11,7 +11,7 @@ if motion_path not in sys.path:
 
 from compute_motion_features import compute_motion_features
 
-def insert_motion_features(ids, conn, bodypart_x='head_x_norm', bodypart_y='head_y_norm', time_limit=480.0):
+def insert_motion_features(ids, conn, bodypart_x='head_x_norm', bodypart_y='head_y_norm', time_limit=1200.0):
     cursor = conn.cursor()
 
     # Ensure columns exist
