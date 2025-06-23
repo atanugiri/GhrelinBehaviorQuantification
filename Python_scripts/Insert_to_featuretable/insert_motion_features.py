@@ -11,18 +11,17 @@ if motion_path not in sys.path:
 
 from compute_motion_features import compute_motion_features
 
-def insert_motion_features(ids, conn, bodypart_x='head_x_norm', bodypart_y='head_y_norm', time_limit=1200.0):
+def insert_motion_features(ids, conn):
     cursor = conn.cursor()
 
     # Ensure columns exist
-    cursor.execute("ALTER TABLE dlc_table ADD COLUMN IF NOT EXISTS distance FLOAT;")
-    cursor.execute("ALTER TABLE dlc_table ADD COLUMN IF NOT EXISTS velocity FLOAT;")
-    cursor.execute("ALTER TABLE dlc_table ADD COLUMN IF NOT EXISTS cumulative_distance FLOAT[];")
+    cursor.execute("ALTER TABLE dlc_table ADD COLUMN IF NOT EXISTS distance FLOAT[];")
+    cursor.execute("ALTER TABLE dlc_table ADD COLUMN IF NOT EXISTS velocity FLOAT[];")
+    cursor.execute("ALTER TABLE dlc_table ADD COLUMN IF NOT EXISTS acceleration FLOAT[];")
 
     for id_ in ids:
         try:
-            total_dist, avg_vel, cum_dist = compute_motion_features(
-                conn, id_, bodypart_x=bodypart_x, bodypart_y=bodypart_y, time_limit=time_limit)
+            dis, vel, acc = compute_motion_features(conn, id_, bodypart_x='head_x_norm', bodypart_y='head_y_norm', time_limit=None, smooth=False, window=5)
         except Exception as e:
             print(f"⚠️ Skipping ID {id_}: {e}")
             continue
@@ -33,10 +32,10 @@ def insert_motion_features(ids, conn, bodypart_x='head_x_norm', bodypart_y='head
                 UPDATE dlc_table
                 SET distance = %s,
                     velocity = %s,
-                    cumulative_distance = %s
+                    acceleration = %s
                 WHERE id = %s;
                 """,
-                (total_dist, avg_vel, cum_dist, id_)
+                (dis, vel, acc, id_)
             )
             print(f"✅ Inserted motion summary for ID {id_}")
         except Exception as e:
