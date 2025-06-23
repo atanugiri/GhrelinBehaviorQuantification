@@ -39,7 +39,7 @@ def compute_binned_curvature_stats(
 
         speed = np.sqrt(dx**2 + dy**2)
         numerator = np.abs(dx * ddy - dy * ddx)
-        denominator = (dx**2 + dy**2)**1.5
+        denominator = ((dx**2 + dy**2) + 1e-4) ** 1.5
         with np.errstate(divide='ignore', invalid='ignore'):
             curvature = np.where(denominator != 0, numerator / denominator, np.nan)
         curvature[speed < speed_thresh] = 0
@@ -50,14 +50,19 @@ def compute_binned_curvature_stats(
             t_start = i * bin_size
             t_end = t_start + bin_size
             mask = (t_vals >= t_start) & (t_vals < t_end)
-            segment = curvature[mask]
-            segment = segment[~np.isnan(segment)]
-
-            if len(segment) < 2:
+            curv_segment = curvature[mask]
+            speed_segment = speed[mask]
+            valid = (~np.isnan(curv_segment)) & (~np.isnan(speed_segment))
+            
+            curv_segment = curv_segment[valid]
+            speed_segment = speed_segment[valid]
+            
+            if len(curv_segment) < 2:
                 stats = [np.nan, np.nan]
             else:
-                z = (segment - np.mean(segment)) / np.std(segment)
-                stats = [np.mean(segment), np.mean(np.abs(z))]
+                weighted_mean = np.average(curv_segment, weights=speed_segment)
+                z = (curv_segment - np.mean(curv_segment)) / np.std(curv_segment)
+                stats = [weighted_mean, np.mean(np.abs(z))]
 
             all_rows.append({
                 'id': id_,
