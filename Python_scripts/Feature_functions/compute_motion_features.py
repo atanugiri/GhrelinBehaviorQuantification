@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 
-def compute_motion_features(conn, id, bodypart_x='head_x_norm', bodypart_y='head_y_norm', time_limit=1200.0):
+def compute_motion_features(conn, id, bodypart_x='head_x_norm', bodypart_y='head_y_norm', 
+                            time_limit=None, smooth=False, window=5):
     """
-    Compute total distance, average velocity, and cumulative distance array
-    from body part coordinates and time stored as arrays.
+    Compute framewise distance, velocity, and acceleration arrays.
 
     Args:
         conn: psycopg2 or SQLAlchemy DB connection
@@ -12,11 +12,13 @@ def compute_motion_features(conn, id, bodypart_x='head_x_norm', bodypart_y='head
         bodypart_x (str): Column name for x-coordinate
         bodypart_y (str): Column name for y-coordinate
         time_limit (float): Upper bound on time values to analyze
+        smooth (bool): Whether to smooth the coordinates before differentiation
+        window (int): Window size for smoothing if enabled
 
     Returns:
-        total_distance (float): Total path length over [0, time_limit]
-        average_velocity (float): Mean velocity over time
-        cumulative_distance (np.ndarray): Array of cumulative distances
+        distance (list of float): Framewise distances
+        velocity (list of float): Framewise velocities
+        acceleration (list of float): Framewise accelerations
     """
     query = f"""
     SELECT t, {bodypart_x}, {bodypart_y}
@@ -31,29 +33,35 @@ def compute_motion_features(conn, id, bodypart_x='head_x_norm', bodypart_y='head
     x_vals = np.array(df[bodypart_x][0])
     y_vals = np.array(df[bodypart_y][0])
 
-    # Filter within [0, time_limit]
-    mask = (t_vals >= 0) & (t_vals <= time_limit)
-    t_vals = t_vals[mask]
-    x_vals = x_vals[mask]
-    y_vals = y_vals[mask]
+    if time_limit is not None:
+        mask = (t_vals >= 0) & (t_vals <= time_limit)
+        t_vals = t_vals[mask]
+        x_vals = x_vals[mask]
+        y_vals = y_vals[mask]
 
-    if len(t_vals) < 2:
+    if len(t_vals) < 3:
         raise ValueError(f"Not enough frames in time range for ID {id}")
+
+    if smooth:
+        from scipy.ndimage import uniform_filter1d
+        x_vals = uniform_filter1d(x_vals, size=window)
+        y_vals = uniform_filter1d(y_vals, size=window)
 
     dx = np.diff(x_vals)
     dy = np.diff(y_vals)
     dt = np.diff(t_vals)
 
     distance = np.sqrt(dx**2 + dy**2)
-    total_distance = np.sum(distance)
-    
     velocity = np.divide(distance, dt, out=np.zeros_like(distance), where=dt != 0)
-    average_velocity = np.mean(velocity)
 
-    cumulative_distance = np.cumsum(np.insert(distance, 0, 0))
+    # Acceleration from diff(velocity) / diff(time)
+    dt2 = dt[1:]  # dt[i] corresponds to t_{i+1} - t_i
+    acc = np.diff(velocity)
+    acceleration = np.divide(acc, dt2, out=np.zeros_like(acc), where=dt2 != 0)
 
-    total_distance = float(total_distance)
-    average_velocity = float(average_velocity)
-    cumulative_distance = np.round(cumulative_distance, 3).astype(float).tolist()
+    # Round and convert to list
+    distance = np.round(distance, 4).astype(float).tolist()
+    velocity = np.round(velocity, 4).astype(float).tolist()
+    acceleration = np.round(acceleration, 4).astype(float).tolist()
 
-    return total_distance, average_velocity, cumulative_distance
+    return distance, velocity, acceleration
