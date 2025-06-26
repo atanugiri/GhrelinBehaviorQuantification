@@ -15,7 +15,7 @@ if feature_path not in sys.path:
 from compute_time_in_maze_regions import compute_time_in_maze_regions
 
 
-def batch_time_in_maze_regions(conn, trial_ids, radius=0.1, bodypart_x='head_x_norm', bodypart_y='head_y_norm'):
+def batch_time_in_maze_regions(conn, trial_ids, radius=0.1):
     """
     Computes region-wise time spent in maze for a list of trial IDs.
 
@@ -23,9 +23,6 @@ def batch_time_in_maze_regions(conn, trial_ids, radius=0.1, bodypart_x='head_x_n
         conn: psycopg2 or SQLAlchemy database connection.
         trial_ids: list of int, trial IDs to process.
         radius: float, radius of circular region for each ROI.
-        bodypart_x: str, column name for x-coordinate.
-        bodypart_y: str, column name for y-coordinate.
-
     Returns:
         pd.DataFrame with one row per trial and columns for each region.
     """
@@ -36,7 +33,7 @@ def batch_time_in_maze_regions(conn, trial_ids, radius=0.1, bodypart_x='head_x_n
         try:
             time_spent = compute_time_in_maze_regions(
                 conn, trial_id, radius=radius,
-                bodypart_x=bodypart_x, bodypart_y=bodypart_y, plot_maze=False
+                bodypart_x='head_x_norm', bodypart_y='head_y_norm', plot_maze=False
             )
             time_spent['id'] = trial_id
             results.append(time_spent)
