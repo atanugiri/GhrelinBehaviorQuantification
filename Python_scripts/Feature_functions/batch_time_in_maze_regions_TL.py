@@ -32,7 +32,7 @@ def batch_time_in_maze_regions_TL(conn, trial_ids, r1=0.1, r2=0.2):
     for trial_id in trial_ids:
         try:
             time_spent = compute_time_in_maze_regions_TL(
-                conn, trial_id, r1=0.1, r2=0.2, 
+                conn, trial_id, r1=r1, r2=r2, 
                 bodypart_x='head_x_norm', bodypart_y='head_y_norm', plot_maze=False)
             time_spent['id'] = trial_id
             results.append(time_spent)
