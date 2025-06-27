@@ -54,7 +54,7 @@ def compute_time_in_maze_regions_TL(conn, trial_id, r1=0.1, r2=0.2, bodypart_x='
     if plot_maze:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(figsize=(5, 5))
-        ax.plot(x, y, lw=1, alpha=0.6, label='Trajectory')
+        ax.scatter(x, y, s=2, alpha=0.9, label='Trajectory')
         ax.add_patch(plt.Circle((cx, cy), r1, color='green', fill=False, linestyle='--'))
         ax.add_patch(plt.Circle((cx, cy), r2, color='red', fill=False, linestyle='--'))
         ax.text(cx, cy, 'corner_LL', fontsize=8, ha='center', va='center')
