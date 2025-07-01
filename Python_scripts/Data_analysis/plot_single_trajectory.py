@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 def plot_single_trajectory(conn, trial_id, bodypart_x='head_x_norm', bodypart_y='head_y_norm', 
-                           label=None, color=None, style='line', max_points=1000, 
+                           label=None, color=None, style='line', max_points=None, 
                            color_by_time=True, ax=None):
     """
     Plot a trajectory (line or scatter) from the database, optionally subsampled and color-coded by time.
@@ -50,9 +50,8 @@ def plot_single_trajectory(conn, trial_id, bodypart_x='head_x_norm', bodypart_y=
     ax.set_aspect('equal')
 
     # Downsample if needed
-    n = len(x)
-    if n > max_points:
-        idx = np.linspace(0, n - 1, max_points).astype(int)
+    if max_points is not None and len(x) > max_points:
+        idx = np.linspace(0, len(x) - 1, max_points).astype(int)
         x, y = x[idx], y[idx]
 
     # Plotting
