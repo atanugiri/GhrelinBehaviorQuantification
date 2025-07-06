@@ -6,13 +6,10 @@ from sklearn.mixture import GaussianMixture
 
 
 def project_onto_diagonal(id, conn, bodypart_x='head_x_norm', bodypart_y='head_y_norm',
-                          p1=(0, 1), p2=(1, 0), table='dlc_table_temp'):
+                          p1=(0, 1), p2=(1, 0), band_width=0.1, table='dlc_table_temp'):
     """
-    Fetch (x, y) list-columns for a given ID from the database and project
-    them onto the diagonal from p1 to p2.
-
-    Returns:
-        1D NumPy array of projected positions.
+    Project (x, y) trajectory points onto diagonal p1->p2,
+    only using points within band_width of the diagonal.
     """
     import pandas as pd
     import numpy as np
@@ -41,13 +38,26 @@ def project_onto_diagonal(id, conn, bodypart_x='head_x_norm', bodypart_y='head_y
 
     points = np.stack((x_vals, y_vals), axis=1)
 
-    # Diagonal projection
+    # Diagonal vector
     p1 = np.array(p1)
     p2 = np.array(p2)
     v = p2 - p1
     v = v / np.linalg.norm(v)
-    projections = (points - p1) @ v
 
+    # Orthogonal distance from each point to the line
+    vecs = points - p1
+    dists = np.linalg.norm(vecs - (vecs @ v)[:, None] * v, axis=1)
+
+    # Filter points within band_width
+    mask = dists <= band_width
+    filtered_points = points[mask]
+
+    if len(filtered_points) == 0:
+        print(f"⚠️ No points within band width {band_width} for ID {id}")
+        return np.array([])
+
+    # Project filtered points
+    projections = (filtered_points - p1) @ v
     return projections
 
 
