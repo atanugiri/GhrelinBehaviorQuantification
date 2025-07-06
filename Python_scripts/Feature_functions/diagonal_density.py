@@ -5,15 +5,51 @@ from scipy.signal import find_peaks
 from sklearn.mixture import GaussianMixture
 
 
-def project_onto_diagonal(points, p1=(0, 1), p2=(1, 0)):
+def project_onto_diagonal(id, conn, bodypart_x='head_x_norm', bodypart_y='head_y_norm',
+                          p1=(0, 1), p2=(1, 0), table='dlc_table_temp'):
     """
-    Project (x, y) points onto the diagonal from p1 to p2.
-    Returns the normalized projection distances from 0 (at p1) to 1 (at p2).
+    Fetch (x, y) list-columns for a given ID from the database and project
+    them onto the diagonal from p1 to p2.
+
+    Returns:
+        1D NumPy array of projected positions.
     """
-    v = np.array(p2) - np.array(p1)  # direction vector of diagonal
-    v = v / np.linalg.norm(v)        # unit vector
-    projections = (points - p1) @ v  # dot product: projection length
+    import pandas as pd
+    import numpy as np
+
+    query = f"""
+        SELECT {bodypart_x}, {bodypart_y}
+        FROM {table}
+        WHERE id = %s;
+    """
+    df = pd.read_sql_query(query, conn, params=(id,))
+
+    if df.empty:
+        print(f"⚠️ No data for ID {id}")
+        return np.array([])
+
+    try:
+        x_vals = np.array(df[bodypart_x][0])
+        y_vals = np.array(df[bodypart_y][0])
+    except Exception as e:
+        print(f"⚠️ Failed to extract arrays for ID {id}: {e}")
+        return np.array([])
+
+    if len(x_vals) != len(y_vals):
+        print(f"⚠️ x and y arrays are unequal length for ID {id}")
+        return np.array([])
+
+    points = np.stack((x_vals, y_vals), axis=1)
+
+    # Diagonal projection
+    p1 = np.array(p1)
+    p2 = np.array(p2)
+    v = p2 - p1
+    v = v / np.linalg.norm(v)
+    projections = (points - p1) @ v
+
     return projections
+
 
 def plot_projection_and_analyze(points, bins=200, smoothing=2):
     """
@@ -111,5 +147,3 @@ def fit_and_plot_gmm_overlay(projections, result=None, n_components=2):
         "gmm_means": means,
         "gmm_width": means[1] - means[0]
     }
-
-
