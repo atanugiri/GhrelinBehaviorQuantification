@@ -25,7 +25,7 @@ def plot_single_trajectory(conn, trial_id, bodypart_x='head_x_norm', bodypart_y=
     """
     query = f"""
     SELECT {bodypart_x}, {bodypart_y}, video_name
-    FROM dlc_table
+    FROM dlc_table_temp
     WHERE id = {trial_id}
     """
     df = pd.read_sql_query(query, conn)
