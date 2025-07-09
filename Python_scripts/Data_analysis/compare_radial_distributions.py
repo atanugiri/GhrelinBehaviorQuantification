@@ -96,7 +96,7 @@ def compare_radial_distributions(
 
             plt.axvline(x_intersect, color='gray', linestyle='--', label='Intersection')
 
-    plt.xlabel('Radial distance from light')
+    plt.xlabel('Radial distance from lower_left_corner')
     plt.ylabel(ylabel)
     plt.title(title)
     plt.legend()
