@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def parse_dlc_csv(csv_path, frame_rate, bodyparts, likelihood_threshold=0.6):
+def parse_dlc_csv(csv_path, frame_rate, bodyparts, likelihood_threshold=0.4):
     print(f"[DEBUG] bodyparts: {bodyparts}") # temp
 
     df = pd.read_csv(csv_path, header=[1, 2])  # ✅ Skip scorer row
