@@ -19,6 +19,7 @@ anaconda_projects/
 *.log
 *.mat
 *.yaml
+*.png
 
 # Videos
 *.mp4
