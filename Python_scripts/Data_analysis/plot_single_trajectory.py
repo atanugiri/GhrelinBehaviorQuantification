@@ -25,7 +25,7 @@ def plot_single_trajectory(conn, trial_id, bodypart_x='head_x_norm', bodypart_y=
     """
     query = f"""
     SELECT {bodypart_x}, {bodypart_y}, video_name
-    FROM dlc_table_temp
+    FROM dlc_table
     WHERE id = {trial_id}
     """
     df = pd.read_sql_query(query, conn)
@@ -51,8 +51,9 @@ def plot_single_trajectory(conn, trial_id, bodypart_x='head_x_norm', bodypart_y=
 
     # Downsample if needed
     if max_points is not None and len(x) > max_points:
-        idx = np.linspace(0, len(x) - 1, max_points).astype(int)
-        x, y = x[idx], y[idx]
+        x = x[:max_points]
+        y = y[:max_points]
+
 
     # Plotting
     if style == 'scatter':
