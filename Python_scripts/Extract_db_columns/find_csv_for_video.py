@@ -1,7 +1,7 @@
 from pathlib import Path
 
 # base_data_dir = Path(r"C:\DeepLabCutProjects\data")  # Adjust if needed
-base_data_dir = Path.home() / "Downloads" / "data" / "LightOnly" / "DlcDataPytorchFiltered"
+base_data_dir = Path.home() / "Downloads" / "data" / "ToyLight" / "DlcDataPytorchFiltered"
 
 def find_csv_for_video(video_name):
     """
