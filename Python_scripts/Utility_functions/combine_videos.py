@@ -11,16 +11,37 @@ def get_video_pairs(files):
             if '_V2_' in f:
                 base = f.replace('_V2_', '_')
                 pairs.setdefault(base, {})['v2'] = f
-            elif '_P_ToyNEW_' in f:
+            else:
+                # Accept any base file (not V2)
                 pairs.setdefault(f, {})['v1'] = f
     return pairs
 
+
 def format_output_name(base_name):
-    """Format output filename as Toy_New_<MM>_<DD>_<YY>_<ShoeName>_P.mp4"""
-    tokens = base_name.replace('.mp4', '').split('_P_ToyNEW_')
-    shoe = tokens[0].replace('_', '')
-    date = tokens[1].replace('-', '_')
-    return f"Toy_New_{date}_{shoe}_P.mp4"
+    """
+    Returns: ToyNew_<MM_DD_YY>_<AnimalNameNoUnderscores>_<P_or_Y>.mp4
+    Handles both single- and multi-word animal names.
+    """
+    base = os.path.basename(base_name).replace('.mp4', '')
+    parts = base.split('_')
+
+    if 'V2' in parts:
+        parts.remove('V2')
+
+    try:
+        condition = parts[-2]  # 'P' or 'Y'
+        date_parts = parts[-1].split('-')  # ['MM', 'DD', 'YY']
+        date = '_'.join(date_parts)
+
+        animal_name_parts = parts[:-2]
+        animal_name = ''.join(animal_name_parts)  # no underscores
+
+        return f"ToyNew_{date}_{animal_name}_{condition}.mp4"
+    except Exception as e:
+        print(f"❌ Filename parsing error: {base_name} → {e}")
+        raise
+
+
 
 def combine_paired_videos(folder):
     """Main function to combine V1 + V2 pairs and save as clean output."""
