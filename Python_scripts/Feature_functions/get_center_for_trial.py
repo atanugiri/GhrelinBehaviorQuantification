@@ -14,10 +14,10 @@ def get_center_for_trial(trial_id, conn, table='dlc_table'):
         center = {1: (1, 0), 2: (1, 1), 4: (0, 1)}.get(maze, (0, 1))
     elif task == 'LightOnly':
         center = {1: (0, 1), 2: (0, 1), 4: (1, 0)}.get(maze, (0, 1))
-    elif task == 'ToyLight':
+    elif task == 'ToyLightNew':
         center = {1: (1, 0), 2: (1, 1), 4: (0, 1)}.get(maze, (0, 1))        
     else:
         center = (0, 1)
 
-    # print(f"[DEBUG] Trial ID {trial_id}: task = {task}, maze = {maze}, center = {center}")
+    print(f"[DEBUG] Trial ID {trial_id}: task = {task}, maze = {maze}, center = {center}")
     return center
