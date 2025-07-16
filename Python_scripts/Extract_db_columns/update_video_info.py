@@ -4,7 +4,7 @@ import psycopg2
 import pandas as pd
 import platform
 
-BASE_VIDEO_DIR = r"C:\DeepLabCutProjects\data"
+BASE_VIDEO_DIR = r"/Users/atanugiri/Downloads/data"
 
 def find_video_path(video_name, video_subdirs):
     for subdir in video_subdirs:
@@ -26,7 +26,7 @@ def get_video_info(video_path):
     return num_frames, frame_rate, width, height
 
 def update_video_info_in_db(video_subdirs):
-    host = "localhost" if platform.system() == "Windows" else "129.108.49.30"
+    host = "localhost" if platform.system() == "Windows" else "129.108.49.142"
     conn = psycopg2.connect(dbname="deeplabcut_db", user="postgres", password="1234", host=host, port="5432")
     cursor = conn.cursor()
     
