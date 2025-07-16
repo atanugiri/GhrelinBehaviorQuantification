@@ -1,4 +1,25 @@
 def normalize_bodypart_from_csv(df, bodypart='head', likelihood_threshold=0.3):
+    """
+    Normalize (x, y) coordinates of a specified bodypart in a DeepLabCut-style DataFrame 
+    using a homography transform based on the median positions of four corner markers.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing bodypart and corner coordinates.
+        bodypart (str): Name of the bodypart to normalize (default: 'head').
+        likelihood_threshold (float): Minimum likelihood value to consider a point valid (default: 0.3).
+
+    Returns:
+        tuple: Normalized x and y coordinates as NumPy arrays. Returns (None, None) if normalization fails.
+
+    Notes:
+        - Coordinates with likelihood below the threshold are treated as NaN and interpolated.
+        - Corner1–Corner4 must exist in the DataFrame with corresponding _x and _y columns.
+        - Normalization maps corner coordinates to a standard unit square:
+              corner1 → (1, 0)
+              corner2 → (0, 0)
+              corner3 → (0, 1)
+              corner4 → (1, 1)
+    """
     import numpy as np
     import pandas as pd
     import cv2
