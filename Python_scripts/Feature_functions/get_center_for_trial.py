@@ -19,5 +19,5 @@ def get_center_for_trial(trial_id, conn, table='dlc_table'):
     else:
         center = (0, 1)
 
-    print(f"[DEBUG] Trial ID {trial_id}: task = {task}, maze = {maze}, center = {center}")
+    # print(f"[DEBUG] Trial ID {trial_id}: task = {task}, maze = {maze}, center = {center}")
     return center
