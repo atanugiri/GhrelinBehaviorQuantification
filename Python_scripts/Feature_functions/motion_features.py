@@ -80,81 +80,31 @@ def compute_motion_features(conn: PGConnection, trial_id: int,
     )
 
 
-def insert_motion_features(conn: PGConnection, trial_id: int, 
-                           bodypart_x: str = 'head_x_norm', 
-                           bodypart_y: str = 'head_y_norm', 
-                           time_limit: Optional[float] = None, 
-                           smooth: bool = False, 
-                           window: int = 5) -> None:
+def batch_compute_motion_feature(
+    conn: PGConnection, 
+    trial_ids: List[int], 
+    feature: str = 'distance',  # or 'velocity', 'acceleration'
+    bodypart_x: str = 'head_x_norm', 
+    bodypart_y: str = 'head_y_norm', 
+    time_limit: Optional[float] = None, 
+    smooth: bool = False, 
+    window: int = 5
+) -> List[np.ndarray]:
     """
-    Compute and insert motion features into the dlc_table for a given trial.
-
-    Args:
-        conn: Active PostgreSQL connection.
-        trial_id: ID of the trial to process.
-        bodypart_x: Name of the x-coordinate column.
-        bodypart_y: Name of the y-coordinate column.
-        time_limit: Upper time limit to analyze.
-        smooth: Whether to apply smoothing.
-        window: Smoothing window size.
+    Compute a specified motion feature ('distance', 'velocity', 'acceleration') for a batch of trials.
 
     Returns:
-        None. Updates the database in place.
+        List of 1D numpy arrays corresponding to the chosen feature per trial.
     """
-    try:
-        dis, vel, acc = compute_motion_features(conn, trial_id, bodypart_x, bodypart_y, time_limit, smooth, window)
-    except Exception as e:
-        print(f"⚠️ Skipping ID {trial_id}: {e}")
-        return
+    assert feature in ['distance', 'velocity', 'acceleration'], "Invalid feature name"
 
-    try:
-        cursor = conn.cursor()
-        cursor.execute("ALTER TABLE dlc_table ADD COLUMN IF NOT EXISTS distance FLOAT[];")
-        cursor.execute("ALTER TABLE dlc_table ADD COLUMN IF NOT EXISTS velocity FLOAT[];")
-        cursor.execute("ALTER TABLE dlc_table ADD COLUMN IF NOT EXISTS acceleration FLOAT[];")
-
-        cursor.execute(
-            """
-            UPDATE dlc_table
-            SET distance = %s,
-                velocity = %s,
-                acceleration = %s
-            WHERE id = %s;
-            """,
-            (dis, vel, acc, trial_id)
-        )
-        conn.commit()
-        print(f"✅ Motion features inserted for ID {trial_id}")
-    except Exception as e:
-        print(f"❌ Failed to update DB for ID {trial_id}: {e}")
-    finally:
-        cursor.close()
-
-
-def batch_insert_motion_features(conn: PGConnection, trial_ids: List[int],
-                                  bodypart_x: str = 'head_x_norm',
-                                  bodypart_y: str = 'head_y_norm',
-                                  time_limit: Optional[float] = None,
-                                  smooth: bool = False,
-                                  window: int = 5) -> None:
-    """
-    Compute and insert motion features into the dlc_table for multiple trial IDs.
-
-    Args:
-        conn: Active PostgreSQL connection.
-        trial_ids: List of trial IDs to process.
-        bodypart_x: Name of the x-coordinate column.
-        bodypart_y: Name of the y-coordinate column.
-        time_limit: Upper time limit to analyze.
-        smooth: Whether to apply smoothing.
-        window: Smoothing window size.
-
-    Returns:
-        None. Prints logs and updates the database.
-    """
-    print(f"🟡 Starting batch insertion for {len(trial_ids)} trials...")
-
+    results = []
     for trial_id in trial_ids:
-        insert_motion_features(conn, trial_id, bodypart_x, bodypart_y, time_limit, smooth, window)
-
-    print("✅ Batch insertion complete.")
+        try:
+            dis, vel, acc = compute_motion_features(conn, trial_id, bodypart_x, bodypart_y, time_limit, smooth, window)
+            feature_map = {'distance': dis, 'velocity': vel, 'acceleration': acc}
+            results.append(np.array(feature_map[feature]))
+        except Exception as e:
+            print(f"⚠️ Skipping ID {trial_id}: {e}")
+            continue
+    return results
