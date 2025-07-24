@@ -54,7 +54,7 @@ def process_video(input_path, output_dir):
     base_name, _ = os.path.splitext(filename)
 
     # Pattern: Prefix_AnimalBlock_Trial_x.mp4
-    match = re.match(r"^(.*)_(\w+_\w+_\w+_\w+)_Trial_\d+$", base_name)
+    match = re.match(r"^(.*)_(\w+_\w+_\w+_\w+)(?:_Trial_\d+)?$", base_name)
     if not match:
         print(f"Filename format not recognized: {filename}")
         return
