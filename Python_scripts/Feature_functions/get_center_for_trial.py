@@ -1,5 +1,5 @@
 def get_center_for_trial(trial_id, conn, table='dlc_table'):
-    q = f"""SELECT task, maze_number FROM {table} WHERE id = %s"""
+    q = f"""SELECT genotype, task, maze_number FROM {table} WHERE id = %s"""
     cur = conn.cursor()
     cur.execute(q, (trial_id,))
     row = cur.fetchone()
@@ -8,14 +8,18 @@ def get_center_for_trial(trial_id, conn, table='dlc_table'):
         print(f"[WARNING] Trial ID {trial_id} not found. Using default center (0, 1).")
         return (0, 1)
 
-    task, maze = row
+    genotype, task, maze = row
 
-    if task == 'ToyOnly':
+    if genotype=='black' and task == 'ToyOnly':
         center = {1: (1, 0), 2: (1, 1), 4: (0, 1)}.get(maze, (0, 1))
-    elif task == 'LightOnly':
+    elif genotype=='black' and task == 'LightOnly':
         center = {1: (0, 1), 2: (0, 1), 4: (1, 0)}.get(maze, (0, 1))
-    elif task == 'ToyLightNew':
-        center = {1: (1, 0), 2: (1, 1), 4: (0, 1)}.get(maze, (0, 1))        
+    elif genotype=='black' and task == 'ToyLightNew':
+        center = {1: (1, 0), 2: (1, 1), 4: (0, 1)}.get(maze, (0, 1))    
+    elif genotype == 'white' and task in (
+        'ToyOnly', 'LightOnly', 'FoodLight', 'ToyOnlyExcitatory', 'ToyOnlyInhibitory'):
+        center = (1, 0) if maze == 4 else (0, 1)
+
     else:
         center = (0, 1)
 
