@@ -4,14 +4,13 @@ import psycopg2
 import pandas as pd
 import platform
 
-BASE_VIDEO_DIR = r"/Users/atanugiri/Downloads/data"
 
-def find_video_path(video_name, video_subdirs):
-    for subdir in video_subdirs:
-        folder = os.path.join(BASE_VIDEO_DIR, subdir, 'SplitVideos')
-        candidate = os.path.join(folder, video_name)
-        if os.path.isfile(candidate):
-            return candidate
+def find_video_path(video_name, base_video_dir, subdir):
+    # for subdir in video_subdirs:
+    folder = os.path.join(base_video_dir, subdir, 'SplitVideos')
+    candidate = os.path.join(folder, video_name)
+    if os.path.isfile(candidate):
+        return candidate
     return None
 
 def get_video_info(video_path):
@@ -25,9 +24,7 @@ def get_video_info(video_path):
     cap.release()
     return num_frames, frame_rate, width, height
 
-def update_video_info_in_db(video_subdirs):
-    host = "localhost" if platform.system() == "Windows" else "129.108.49.142"
-    conn = psycopg2.connect(dbname="deeplabcut_db", user="postgres", password="1234", host=host, port="5432")
+def update_video_info_in_db(conn, base_video_dir, subdir):
     cursor = conn.cursor()
     
     # Select incomplete rows
@@ -41,7 +38,7 @@ def update_video_info_in_db(video_subdirs):
     for _, row in df.iterrows():
         video_id = row['id']
         video_name = row['video_name']
-        path = find_video_path(video_name, video_subdirs)
+        path = find_video_path(video_name, base_video_dir, subdir)
 
         if path:
             num_frames, frame_rate, width, height = get_video_info(path)
