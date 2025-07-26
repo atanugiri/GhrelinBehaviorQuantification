@@ -1,4 +1,7 @@
 def get_center_for_trial(trial_id, conn, table='dlc_table'):
+    """
+    get center for trial id based on maze number
+    """
     q = f"""SELECT genotype, task, maze_number FROM {table} WHERE id = %s"""
     cur = conn.cursor()
     cur.execute(q, (trial_id,))
