@@ -22,7 +22,6 @@ def get_center_for_trial(trial_id, conn, table='dlc_table'):
     elif genotype == 'white' and task in (
         'ToyOnly', 'LightOnly', 'FoodLight', 'ToyOnlyExcitatory', 'ToyOnlyInhibitory'):
         center = (1, 0) if maze == 4 else (0, 1)
-
     else:
         center = (0, 1)
 
