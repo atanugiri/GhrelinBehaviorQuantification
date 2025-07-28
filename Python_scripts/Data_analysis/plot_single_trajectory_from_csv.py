@@ -3,13 +3,11 @@ import numpy as np
 import pandas as pd
 from Python_scripts.Extract_db_columns.find_csv_for_video import find_csv_for_video
 
-def plot_single_trajectory_from_csv(conn, trial_id,
-                                        bodyparts=['head'],
-                                        style='line',
-                                        max_points=None,
-                                        color_by_time=True,
-                                        likelihood_threshold=0.4,
-                                        ax=None):
+def plot_single_trajectory_from_csv(
+    conn, trial_id, base_data_dir, bodyparts=['head'], 
+    style='line', max_points=None, color_by_time=True,
+    likelihood_threshold=0.4, ax=None
+):
     """
     Plot trajectories for multiple bodyparts from the filtered DLC CSV.
 
@@ -32,7 +30,7 @@ def plot_single_trajectory_from_csv(conn, trial_id,
     video_name = df['video_name'].iloc[0]
 
     # 2. Get CSV path
-    csv_path = find_csv_for_video(video_name)
+    csv_path = find_csv_for_video(video_name, base_data_dir)
     if not csv_path:
         print(f"❌ CSV not found for {video_name}")
         return ax
