@@ -19,8 +19,11 @@ def get_center_for_trial(trial_id, conn, table='dlc_table'):
         center = {1: (0, 1), 2: (0, 1), 4: (1, 0)}.get(maze, (0, 1))
     elif genotype=='black' and task == 'ToyLightNew':
         center = {1: (1, 0), 2: (1, 1), 4: (0, 1)}.get(maze, (0, 1))    
-    elif genotype == 'white' and task in (
-        'ToyOnly', 'LightOnly', 'FoodLight', 'ToyOnlyExcitatory', 'ToyOnlyInhibitory'):
+    elif genotype == 'white' and (
+        task.startswith('ToyOnly') or 
+        task.startswith('ToyLight') or 
+        task in ('LightOnly', 'FoodLight')
+    ):
         center = (1, 0) if maze == 4 else (0, 1)
     else:
         center = (0, 1)
