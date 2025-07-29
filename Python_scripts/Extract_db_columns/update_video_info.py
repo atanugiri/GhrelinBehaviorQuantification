@@ -64,6 +64,3 @@ def update_video_info_in_db(conn, base_video_dir, subdir):
         print(f"\nUpdated {len(updates)} rows.")
     else:
         print("No updates made.")
-
-    cursor.close()
-    conn.close()
