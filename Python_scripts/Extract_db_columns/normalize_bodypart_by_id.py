@@ -8,14 +8,6 @@ def normalize_bodypart_by_id(conn, id, bodypart='head'):
     based on the median positions of Corner1–Corner4.
     """
 
-    def safe_array(val):
-        if isinstance(val, (list, np.ndarray)):
-            return np.array(val)
-        try:
-            return np.array(eval(val))
-        except Exception:
-            raise ValueError(f"Cannot convert: {val}")
-
     # Query bodypart + corners
     query = f"""
     SELECT 
@@ -36,14 +28,14 @@ def normalize_bodypart_by_id(conn, id, bodypart='head'):
         row = df.iloc[0]
 
         # Bodypart trajectory
-        x_vals = pd.Series(safe_array(row[f"{bodypart}_x"])).interpolate(limit_direction='both').to_numpy()
-        y_vals = pd.Series(safe_array(row[f"{bodypart}_y"])).interpolate(limit_direction='both').to_numpy()
+        x_vals = pd.Series(row[f"{bodypart}_x"]).interpolate(limit_direction='both').to_numpy()
+        y_vals = pd.Series(row[f"{bodypart}_y"]).interpolate(limit_direction='both').to_numpy()
 
         # Corner medians
         corners = []
         for i in range(1, 5):
-            cx = safe_array(row[f"corner{i}_x"])
-            cy = safe_array(row[f"corner{i}_y"])
+            cx = row[f"corner{i}_x"]
+            cy = row[f"corner{i}_y"]
             corners.append([np.nanmedian(cx), np.nanmedian(cy)])
 
         src_pts = np.array(corners, dtype=np.float32)
