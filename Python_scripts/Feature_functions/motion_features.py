@@ -5,6 +5,7 @@ from psycopg2.extensions import connection as PGConnection
 
 
 def compute_motion_features(conn: PGConnection, trial_id: int, 
+                            table='dlc_table', bodypart='Midback',
                             time_limit: Optional[float] = None, 
                             smooth: bool = False, 
                             window: int = 5) -> Tuple[List[float], List[float], List[float]]:
@@ -17,7 +18,7 @@ def compute_motion_features(conn: PGConnection, trial_id: int,
     x_vals, y_vals = get_normalized_bodypart(
         trial_id=trial_id, 
         conn=conn, 
-        bodypart='Head', 
+        bodypart=bodypart, 
         normalize=True,
         interpolate=True
     )
@@ -71,6 +72,7 @@ def compute_motion_features(conn: PGConnection, trial_id: int,
 def batch_compute_motion_feature(
     conn: PGConnection, 
     trial_ids: List[int], 
+    table='dlc_table', bodypart='Midback',
     feature: str = 'distance',
     time_limit: Optional[float] = None, 
     smooth: bool = False, 
@@ -85,7 +87,9 @@ def batch_compute_motion_feature(
     results = []
     for trial_id in trial_ids:
         try:
-            dis, vel, acc = compute_motion_features(conn, trial_id, time_limit, smooth, window)
+            dis, vel, acc = compute_motion_features(
+                conn, trial_id, table, bodypart, time_limit, smooth, window
+            )
             feature_map = {'distance': dis, 'velocity': vel, 'acceleration': acc}
             results.append(np.array(feature_map[feature]))
         except Exception as e:
