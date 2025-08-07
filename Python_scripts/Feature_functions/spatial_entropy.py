@@ -3,7 +3,9 @@ import pandas as pd
 from scipy.stats import entropy
 from Python_scripts.Data_analysis.normalized_bodypart import get_normalized_bodypart
 
-def get_spatial_entropy(trial_id, conn, table='dlc_table', grid_size=10, max_time=None, radius_limit=None):
+def get_spatial_entropy(trial_id, conn, table='dlc_table', 
+                        bodypart='Midback', grid_size=10, 
+                        max_time=None, radius_limit=None):
     """
     Calculate spatial entropy of head position in unit square maze.
     
@@ -22,7 +24,7 @@ def get_spatial_entropy(trial_id, conn, table='dlc_table', grid_size=10, max_tim
     x, y = get_normalized_bodypart(
         trial_id=trial_id,
         conn=conn,
-        bodypart='Head',
+        bodypart=bodypart,
         normalize=True,
         interpolate=True
     )
@@ -66,12 +68,14 @@ def get_spatial_entropy(trial_id, conn, table='dlc_table', grid_size=10, max_tim
     return entropy_val
     
 
-def get_batch_spatial_entropy_df(id_list, conn, table='dlc_table', grid_size=10, max_time=None, radius_limit=None, verbose=False):
+def get_batch_spatial_entropy_df(
+    id_list, conn, table='dlc_table', bodypart='Midback',
+    grid_size=10, max_time=None, radius_limit=None, verbose=False
+):
     data = []
     for trial_id in id_list:
         if verbose:
             print(f"Processing trial {trial_id}")
-        val = get_spatial_entropy(trial_id, conn, table, grid_size, max_time, radius_limit)
+        val = get_spatial_entropy(trial_id, conn, table, bodypart, grid_size, max_time, radius_limit)
         data.append({'trial_id': trial_id, 'spatial_entropy': val})
     return pd.DataFrame(data)
-
