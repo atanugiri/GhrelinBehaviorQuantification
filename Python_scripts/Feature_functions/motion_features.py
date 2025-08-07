@@ -5,45 +5,33 @@ from psycopg2.extensions import connection as PGConnection
 
 
 def compute_motion_features(conn: PGConnection, trial_id: int, 
-                            bodypart_x: str = 'head_x_norm', 
-                            bodypart_y: str = 'head_y_norm', 
                             time_limit: Optional[float] = None, 
                             smooth: bool = False, 
                             window: int = 5) -> Tuple[List[float], List[float], List[float]]:
     """
-    Compute framewise motion features: distance, velocity, and acceleration.
-
-    Args:
-        conn: Active PostgreSQL database connection.
-        trial_id: Integer ID of the trial.
-        bodypart_x: Column name for x-coordinates.
-        bodypart_y: Column name for y-coordinates.
-        time_limit: Maximum time (in seconds) to include.
-        smooth: Whether to apply smoothing to coordinates.
-        window: Window size for smoothing.
-
-    Returns:
-        Tuple of (distance, velocity, acceleration), each a list of floats.
-
-    Raises:
-        ValueError: If data is missing, invalid, or too short for computation.
+    Compute framewise motion features: distance, velocity, and acceleration
+    using normalized bodypart coordinates from get_normalized_bodypart().
     """
-    query = f"""
-    SELECT {bodypart_x}, {bodypart_y}, frame_rate
-    FROM dlc_table
-    WHERE id = %s;
-    """
+    from Python_scripts.Data_analysis.normalized_bodypart import get_normalized_bodypart
+
+    x_vals, y_vals = get_normalized_bodypart(
+        trial_id=trial_id, 
+        conn=conn, 
+        bodypart='Head', 
+        normalize=True,
+        interpolate=True
+    )
+
+    if x_vals is None or y_vals is None:
+        raise ValueError(f"Could not load normalized data for ID {trial_id}")
+
+    # Get frame rate from database
+    query = "SELECT frame_rate FROM dlc_table WHERE id = %s;"
     df = pd.read_sql_query(query, conn, params=(trial_id,))
-    if df.empty:
-        raise ValueError(f"No data found for trial ID {trial_id}")
-
-    x_vals = np.array(df[bodypart_x][0])
-    y_vals = np.array(df[bodypart_y][0])
+    if df.empty or pd.isna(df['frame_rate'][0]):
+        raise ValueError(f"Missing or invalid frame_rate for ID {trial_id}")
+    
     frame_rate = df['frame_rate'][0]
-
-    if not isinstance(frame_rate, (int, float)) or frame_rate <= 0:
-        raise ValueError(f"Invalid frame rate for ID {trial_id}")
-
     t_vals = np.arange(len(x_vals)) / frame_rate
 
     if time_limit is not None:
@@ -83,28 +71,24 @@ def compute_motion_features(conn: PGConnection, trial_id: int,
 def batch_compute_motion_feature(
     conn: PGConnection, 
     trial_ids: List[int], 
-    feature: str = 'distance',  # or 'velocity', 'acceleration'
-    bodypart_x: str = 'head_x_norm', 
-    bodypart_y: str = 'head_y_norm', 
+    feature: str = 'distance',
     time_limit: Optional[float] = None, 
     smooth: bool = False, 
     window: int = 5
 ) -> List[np.ndarray]:
     """
     Compute a specified motion feature ('distance', 'velocity', 'acceleration') for a batch of trials.
-
-    Returns:
-        List of 1D numpy arrays corresponding to the chosen feature per trial.
+    Uses normalized (x, y) from get_normalized_bodypart().
     """
     assert feature in ['distance', 'velocity', 'acceleration'], "Invalid feature name"
 
     results = []
     for trial_id in trial_ids:
         try:
-            dis, vel, acc = compute_motion_features(conn, trial_id, bodypart_x, bodypart_y, time_limit, smooth, window)
+            dis, vel, acc = compute_motion_features(conn, trial_id, time_limit, smooth, window)
             feature_map = {'distance': dis, 'velocity': vel, 'acceleration': acc}
             results.append(np.array(feature_map[feature]))
         except Exception as e:
-            print(f"⚠️ Skipping ID {trial_id}: {e}")
+            print(f"Skipping ID {trial_id}: {e}")
             continue
     return results
