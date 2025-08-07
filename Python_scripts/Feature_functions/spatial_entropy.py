@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import entropy
+from Python_scripts.Data_analysis.normalized_bodypart import get_normalized_bodypart
 
 def get_spatial_entropy(trial_id, conn, table='dlc_table', grid_size=10, max_time=None, radius_limit=None):
     """
@@ -17,19 +18,24 @@ def get_spatial_entropy(trial_id, conn, table='dlc_table', grid_size=10, max_tim
     Returns:
         entropy_val: float, spatial entropy (base 2).
     """
-    # Fetch normalized trajectory
-    q = f"""SELECT head_x_norm, head_y_norm, frame_rate FROM {table} WHERE id = %s"""
-    df = pd.read_sql_query(q, conn, params=(trial_id,))
-    if df.empty:
+    # Get normalized head coordinates
+    x, y = get_normalized_bodypart(
+        trial_id=trial_id,
+        conn=conn,
+        bodypart='Head',
+        normalize=True,
+        interpolate=True
+    )
+    
+    if x is None or y is None:
         return np.nan
 
-    try:
-        x = np.array(df['head_x_norm'][0])
-        y = np.array(df['head_y_norm'][0])
-        frame_rate = df['frame_rate'][0]
-    except Exception as e:
-        print(f"[ERROR] Extraction failed for ID {trial_id}: {e}")
+    # Get frame rate
+    q = f"""SELECT frame_rate FROM {table} WHERE id = %s"""
+    df = pd.read_sql_query(q, conn, params=(trial_id,))
+    if df.empty or pd.isna(df['frame_rate'][0]):
         return np.nan
+    frame_rate = df['frame_rate'][0]
 
     t = np.arange(len(x)) / frame_rate
 
@@ -39,7 +45,6 @@ def get_spatial_entropy(trial_id, conn, table='dlc_table', grid_size=10, max_tim
         y = y[mask]
 
     if radius_limit is not None:
-        # Use get_center_for_trial
         from Python_scripts.Feature_functions.get_center_for_trial import get_center_for_trial
         center = get_center_for_trial(trial_id, conn, table)
         r = np.linalg.norm(np.stack((x, y), axis=1) - center, axis=1)
@@ -59,7 +64,7 @@ def get_spatial_entropy(trial_id, conn, table='dlc_table', grid_size=10, max_tim
     # Filter zero-prob bins to avoid log2(0)
     entropy_val = entropy(probs[probs > 0], base=2)
     return entropy_val
-
+    
 
 def get_batch_spatial_entropy_df(id_list, conn, table='dlc_table', grid_size=10, max_time=None, radius_limit=None, verbose=False):
     data = []
