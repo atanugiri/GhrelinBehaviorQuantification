@@ -78,11 +78,12 @@ def get_normalized_bodypart(trial_id, conn, bodypart='Midback',
                     y_vals = normalized[:, 1]
                 else:
                     print(f"[WARNING] Trial {trial_id}: Homography failed due to missing corner medians. Falling back to min-max.")
-                    x_vals = (x_vals - np.nanmin(x_vals)) / (np.nanptp(x_vals) + 1e-8)
-                    y_vals = (y_vals - np.nanmin(y_vals)) / (np.nanptp(y_vals) + 1e-8)
+                    x_vals = (x_vals - np.nanmin(x_vals)) / (np.nanmax(x_vals) - np.nanmin(x_vals) + 1e-8)
+                    y_vals = (y_vals - np.nanmin(y_vals)) / (np.nanmax(y_vals) - np.nanmin(y_vals) + 1e-8)
+
             else:
-                x_vals = (x_vals - np.nanmin(x_vals)) / (np.nanptp(x_vals) + 1e-8)
-                y_vals = (y_vals - np.nanmin(y_vals)) / (np.nanptp(y_vals) + 1e-8)
+                x_vals = (x_vals - np.nanmin(x_vals)) / (np.nanmax(x_vals) - np.nanmin(x_vals) + 1e-8)
+                y_vals = (y_vals - np.nanmin(y_vals)) / (np.nanmax(y_vals) - np.nanmin(y_vals) + 1e-8)
 
         return x_vals, y_vals
 
