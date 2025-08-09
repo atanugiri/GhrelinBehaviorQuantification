@@ -6,13 +6,13 @@ __pycache__/
 .ipynb_checkpoints/
 anaconda_projects/
 
+# data
+data/
+
 # VS Code settings
 .vscode/
 
 # DeepLabCut outputs
-*.h5
-*.csv
-*.pickle
 *.pkl
 *.npz
 *.npy
@@ -37,5 +37,4 @@ venv/
 Thumbs.db
 
 # Folders
-DLC-Atanu-*/
-DLC-FoodLight-Atanu-*/
+DLC*/
