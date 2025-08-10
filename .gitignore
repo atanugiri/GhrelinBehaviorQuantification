@@ -12,21 +12,6 @@ data/
 # VS Code settings
 .vscode/
 
-# DeepLabCut outputs
-*.pkl
-*.npz
-*.npy
-*.log
-*.mat
-*.yaml
-*.png
-
-# Videos
-*.mp4
-*.avi
-*.mov
-*.mkv
-
 # Environment files
 env/
 venv/
