@@ -6,9 +6,6 @@ __pycache__/
 .ipynb_checkpoints/
 anaconda_projects/
 
-# data
-data/
-
 # VS Code settings
 .vscode/
 
@@ -22,4 +19,4 @@ venv/
 Thumbs.db
 
 # Folders
-DLC*/
+data/
