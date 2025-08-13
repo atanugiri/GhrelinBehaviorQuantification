@@ -4,9 +4,10 @@ import pandas as pd
 from scipy.stats import ranksums
 
 def plot_groupwise_bar(df, y='total_distance', title=None, ylabel=None,
-                       figsize=(6, 4), plot_type='bar', order=None, show_stats=True):
+                       figsize=(6, 4), plot_type='bar', order=None,
+                       show_stats=True, show_points=True):
     """
-    Plot groupwise comparison with optional bar or box plot and RS test.
+    Plot groupwise comparison with optional bar or box plot, RS test, and jitter points.
 
     Args:
         df (pd.DataFrame): Must have columns ['group', y]
@@ -17,6 +18,7 @@ def plot_groupwise_bar(df, y='total_distance', title=None, ylabel=None,
         plot_type (str): 'bar' or 'box'
         order (list): Optional list of group order (e.g., ['Saline', 'Ghrelin'])
         show_stats (bool): If True, adds RS test and asterisk(s)
+        show_points (bool): If True, overlay individual data points
 
     Returns:
         fig, ax: matplotlib Figure and Axes objects
@@ -42,15 +44,16 @@ def plot_groupwise_bar(df, y='total_distance', title=None, ylabel=None,
     else:
         raise ValueError("plot_type must be either 'bar' or 'box'.")
 
-    sns.stripplot(data=df, x='group', y=y, order=order,
-                  color='black', size=4, jitter=True, ax=ax)
+    # Optional overlay of individual points
+    if show_points:
+        sns.stripplot(data=df, x='group', y=y, order=order,
+                      color='black', size=4, jitter=True, ax=ax)
 
     if show_stats and len(order) == 2:
         vals1 = df[df['group'] == order[0]][y]
         vals2 = df[df['group'] == order[1]][y]
         stat, pval = ranksums(vals1, vals2)
 
-        # Choose annotation text
         if pval < 0.0001:
             p_str = '****'
         elif pval < 0.001:
@@ -62,7 +65,6 @@ def plot_groupwise_bar(df, y='total_distance', title=None, ylabel=None,
         else:
             p_str = 'n.s.'
 
-        # Draw a line + asterisk above bars
         y_max = df[y].max()
         y_line = y_max * 1.1
         y_text = y_max * 1.15
