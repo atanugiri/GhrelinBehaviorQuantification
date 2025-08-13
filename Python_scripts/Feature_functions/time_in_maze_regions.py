@@ -1,3 +1,6 @@
+from typing import Dict
+import pandas as pd
+
 def compute_time_in_maze_regions(
     conn, trial_id, table='dlc_table', bodypart='Head',
     shape = 'square',  # 'square' or 'circle'
@@ -122,7 +125,6 @@ def batch_time_in_maze_regions(
         DataFrame with columns:
         ['trial_id', 'corner_total', 'center', 'task_specific_corner']
     """
-    import pandas as pd
     from typing import List, Dict
     results = []
 
