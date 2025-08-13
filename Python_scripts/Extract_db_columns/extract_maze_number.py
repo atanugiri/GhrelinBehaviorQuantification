@@ -21,19 +21,21 @@ def build_prefix_to_animal_map(mother_videos):
     Create a mapping from prefix → list of 4 animals.
     Supports filenames like:
     - Prefix_Animal1_Animal2_Animal3_Animal4.mp4
-    - Prefix_Animal1_Animal2_Animal3_Animal4_Trial_1.mp4
+    - Prefix_Animal1_Animal2_Animal3_Animal4_Trial2.mp4
     """
     prefix_to_animals = {}
 
     for mv in mother_videos:
         base = mv.stem
 
-        # Match with optional '_Trial_#'
-        match = re.match(r"^(.*)_((?:[^_]+_){3}[^_]+)(?:_Trial_\d+)?$", base)
+        # Match optional '_Trial\d+' at the end
+        match = re.match(
+            r"^(?P<prefix>.+?)_(?P<animals>(?:[^_]+_){3}[^_]+)(?:_Trial\d+)?$",
+            base
+        )
         if match:
-            prefix = match.group(1)
-            animal_block = match.group(2)
-            animals = animal_block.split("_")
+            prefix = match.group("prefix")
+            animals = match.group("animals").split("_")
             if len(animals) == 4:
                 prefix_to_animals[prefix] = animals
 
