@@ -3,49 +3,39 @@ from datetime import datetime
 
 def parse_video_name(video_name):
     """
-    Parse a standardized video filename to extract task, date, animal name, and health group.
-
-    The expected filename format is:
-        Task_MM_DD_YY_HealthCode_Name.ext
-
-    - Task: A string with letters (e.g., 'FoodOnly', 'FoodOnlyInhibitory', 'FoodLight').
-    - Date: Month_Day_Year as integers (e.g., '2_13_25' → '2025-02-13').
-    - HealthCode: One of the following:
-        - 'P' or 'Y'
-        - 'S#P' or 'S#Y' (e.g., 'S4P', 'S2Y')
-        Health is inferred as:
-            - 'saline' if code ends with 'Y'
-            - 'ghrelin' if code ends with 'P'
-    - Name: Animal name, word, or number (e.g., 'Paris', '5').
-
-    Parameters:
-        video_name (str): The filename of the video (with or without extension).
-
-    Returns:
-        tuple: (task, date_str, name, health), or (None, None, None, None) if parsing fails.
+    Robustly parse Task_MM_DD_YY_HealthCode_Name[optional _Trial#].ext
+    Accepts 'Trial1', 'trial1', 'Trial_1', or 'Trial-1' and ignores it.
     """
     # Strip extension if present
     base_name = video_name.rsplit('.', 1)[0]
 
-    # Match the pattern
+    # 1) Pre-clean: remove any trailing _Trial... pattern
+    #    Handles: _Trial1, _trial1, _Trial_1, _Trial-1
+    base_name = re.sub(r'_(?:[Tt]rial)[ _-]?\d+$', '', base_name)
+
+    # 2) Parse the cleaned name
     pattern = re.match(
-        r'^(?P<task>[A-Za-z]+)_(?P<month>\d{1,2})_(?P<day>\d{1,2})_(?P<year>\d{2})_(?P<healthcode>(S\d+[PY]|[PY]))_(?P<name>[\w]+)$',
+        r'^(?P<task>[A-Za-z]+)_'
+        r'(?P<month>\d{1,2})_'
+        r'(?P<day>\d{1,2})_'
+        r'(?P<year>\d{2})_'
+        r'(?P<healthcode>(S\d+[PY]|[PY]))_'
+        r'(?P<name>[\w]+)$',
         base_name
     )
 
-    if pattern:
-        task = pattern.group("task")
-        month = int(pattern.group("month"))
-        day = int(pattern.group("day"))
-        year = int("20" + pattern.group("year"))
-        date_str = datetime(year, month, day).strftime("%Y-%m-%d")
+    if not pattern:
+        return None, None, None, None
 
-        healthcode = pattern.group("healthcode")
-        health = "saline" if healthcode.endswith("Y") else "ghrelin"
+    task = pattern.group("task")
+    month = int(pattern.group("month"))
+    day = int(pattern.group("day"))
+    year = int("20" + pattern.group("year"))
+    date_str = datetime(year, month, day).strftime("%Y-%m-%d")
 
-        name = pattern.group("name")
+    healthcode = pattern.group("healthcode")
+    health = "saline" if healthcode.endswith("Y") else "ghrelin"
 
-        return task, date_str, name, health
+    name = pattern.group("name")
 
-    # Fallback if not matched
-    return None, None, None, None
+    return task, date_str, name, health
