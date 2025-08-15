@@ -3,73 +3,117 @@ import re
 import pandas as pd
 
 
+# --- Helpers -----------------------------------------------------------------
+
+# Strip trailing variations like: _Trial1, _trial_2, _Trial-03
+TRIAL_SUFFIX_RX = re.compile(r'_(?:[Tt]rial)[ _-]?\d+$')
+
+def _strip_trial_suffix(stem: str) -> str:
+    return TRIAL_SUFFIX_RX.sub('', stem)
+
+# Optional: strip quadrant suffixes like _top_left / _bottom_right
+QUAD_SUFFIX_RX = re.compile(r'_(?:top|bottom)_(?:left|right)$', flags=re.I)
+
+def _strip_quadrant_suffix(stem: str) -> str:
+    return QUAD_SUFFIX_RX.sub('', stem)
+
+def _prefix_from_stem(stem: str) -> str:
+    """
+    Prefix is the first 5 tokens: Task_MM_DD_YY_HealthCode
+    """
+    parts = stem.split('_')
+    # Expect at least: Task, MM, DD, YY, HealthCode, Animal
+    if len(parts) < 6:
+        return ''
+    return '_'.join(parts[:5])
+
+
+# --- Public API ---------------------------------------------------------------
+
 def load_mother_videos(raw_video_dirs):
     """
-    Load mother videos from given directories.
-    Match files ending in 4 animal names (w/ or w/o _Trial_#).
+    Return only mother videos that end with 4 animal tokens, with optional Trial suffix.
+
+    Matches:
+      Prefix_A1_A2_A3_A4.mp4
+      Prefix_A1_A2_A3_A4_Trial2.mp4
+      (Prefix is everything before the 4-animal block.)
     """
-    all_videos = []
+    mother_pat = re.compile(
+        r'^.+_(?:[^_]+_){3}[^_]+(?:_(?:[Tt]rial)[ _-]?\d+)?\.mp4$'
+    )
+    all_mothers = []
     for folder in raw_video_dirs:
         folder_path = Path(folder)
-        # Match files with 4 trailing underscore-separated tokens
-        all_videos += list(folder_path.glob("*.mp4"))
-    return all_videos
+        for p in folder_path.glob("*.mp4"):
+            if mother_pat.match(p.name):
+                all_mothers.append(p)
+    return all_mothers
 
 
 def build_prefix_to_animal_map(mother_videos):
     """
-    Create a mapping from prefix → list of 4 animals.
-    Supports filenames like:
-    - Prefix_Animal1_Animal2_Animal3_Animal4.mp4
-    - Prefix_Animal1_Animal2_Animal3_Animal4_Trial2.mp4
+    Build a map: 'Task_MM_DD_YY_HealthCode' -> [A1, A2, A3, A4]
+    (Where animals are taken case-sensitively from filenames.)
     """
     prefix_to_animals = {}
-
     for mv in mother_videos:
-        base = mv.stem
-
-        # Match optional '_Trial\d+' at the end
-        match = re.match(
-            r"^(?P<prefix>.+?)_(?P<animals>(?:[^_]+_){3}[^_]+)(?:_Trial\d+)?$",
-            base
-        )
-        if match:
-            prefix = match.group("prefix")
-            animals = match.group("animals").split("_")
-            if len(animals) == 4:
-                prefix_to_animals[prefix] = animals
-
+        base = _strip_trial_suffix(mv.stem)
+        # Everything before the 4-animal block is the prefix.
+        m = re.match(r'^(?P<prefix>.+?)_(?P<animals>(?:[^_]+_){3}[^_]+)$', base)
+        if not m:
+            continue
+        prefix = m.group('prefix')
+        animals = m.group('animals').split('_')
+        if len(animals) == 4:
+            prefix_to_animals[prefix] = animals
     return prefix_to_animals
 
 
 def get_maze_number(video_name, animal_name, prefix_to_animals):
     """
-    Given a split video name and animal name, return maze number (1–4).
-    Handles both with and without '_Trial_#' in mother video.
+    Given a split video name (with or without _Trial# / quadrant suffix)
+    and the DB 'name' column, return maze number 1–4, else None.
+
+    - Uses consistent 5-token prefix: Task_MM_DD_YY_HealthCode
+    - Case-insensitive animal match
+    - Tolerates trailing digits in animal_name (e.g., 'None4' -> 'None')
     """
     stem = Path(video_name).stem
+    stem = _strip_trial_suffix(stem)
+    stem = _strip_quadrant_suffix(stem)
 
-    # Remove trailing _Trial# if present
-    stem = re.sub(r"_Trial\d+$", "", stem)
-
-    parts = stem.split("_")
-    if len(parts) < 5:
-        return None  # Not enough parts to contain animal and prefix
-
-    prefix = "_".join(parts[:-1])
-    animal = parts[-1]
-
-    animals = prefix_to_animals.get(prefix)
-    if not animals or animal_name not in animals:
+    prefix = _prefix_from_stem(stem)
+    if not prefix:
         return None
 
-    return animals.index(animal_name) + 1
+    parts = stem.split('_')
+    # Expected at least 6 tokens: ... + Animal
+    animal_from_split = parts[5] if len(parts) >= 6 else None
+
+    # Prefer DB name; fallback to animal parsed from split filename
+    candidate = animal_name if pd.notna(animal_name) and str(animal_name) != '' else animal_from_split
+    if not candidate:
+        return None
+
+    # Normalize candidate (e.g., 'None4' -> 'None')
+    candidate_clean = re.sub(r'\d+$', '', str(candidate)).lower()
+
+    animals = prefix_to_animals.get(prefix)
+    if not animals:
+        return None
+
+    for i, a in enumerate(animals):
+        if a.lower() == candidate_clean:
+            return i + 1
+
+    return None
 
 
 def update_maze_numbers_in_db(conn, dlc_table_name, prefix_to_animals):
     """
-    Read video_name and name from dlc_table, compute maze_number,
-    and update the database. Also print sanity check info.
+    Read id, video_name, name from dlc_table, compute maze_number,
+    and update the database. Prints a clear sanity line for each update.
     """
     df = pd.read_sql(f"SELECT id, video_name, name FROM {dlc_table_name}", conn)
 
@@ -77,18 +121,22 @@ def update_maze_numbers_in_db(conn, dlc_table_name, prefix_to_animals):
         for _, row in df.iterrows():
             video_name = row['video_name']
             animal_name = row['name']
-            maze_number = get_maze_number(video_name, animal_name, prefix_to_animals)
 
+            maze_number = get_maze_number(video_name, animal_name, prefix_to_animals)
             if maze_number is not None:
-                stem = Path(video_name).stem
-                prefix = "_".join(stem.split("_")[:-1])
+                stem_clean = _strip_quadrant_suffix(_strip_trial_suffix(Path(video_name).stem))
+                prefix = _prefix_from_stem(stem_clean)
                 animals = prefix_to_animals.get(prefix, [])
-                mother_video = f"{prefix}_{'_'.join(animals)}_Trial_1.mp4"
+                if animals:
+                    mother_video = f"{prefix}_{'_'.join(animals)}_Trial_1.mp4"
+                else:
+                    mother_video = "(mother not found in map)"
+
                 print(f"[✓] {video_name} → {mother_video} → maze {maze_number}")
 
                 cur.execute(
                     f"UPDATE {dlc_table_name} SET maze_number = %s WHERE id = %s",
-                    (maze_number, int(row['id']))
+                    (int(maze_number), int(row['id']))
                 )
 
     conn.commit()
