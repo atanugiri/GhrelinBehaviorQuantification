@@ -53,7 +53,7 @@ def plot_groupwise_bar(df, y='total_distance', title=None, ylabel=None,
         vals1 = df[df['group'] == order[0]][y]
         vals2 = df[df['group'] == order[1]][y]
         stat, pval = ranksums(vals1, vals2)
-
+    
         if pval < 0.0001:
             p_str = '****'
         elif pval < 0.001:
@@ -64,12 +64,13 @@ def plot_groupwise_bar(df, y='total_distance', title=None, ylabel=None,
             p_str = '*'
         else:
             p_str = 'n.s.'
-
+    
         y_max = df[y].max()
-        y_line = y_max * 1.1
-        y_text = y_max * 1.15
-        ax.plot([0, 1], [y_line, y_line], color='black', linewidth=1.2)
-        ax.text(0.5, y_text, p_str, ha='center', fontsize=12)
+        y_text = y_max * 0.9  # Position stars just above tallest bar/box
+    
+        # Place stars
+        ax.text(0.5, y_text, p_str, ha='center', fontsize=14, fontweight='bold')
+
 
     ax.set_ylabel(ylabel if ylabel else y.replace('_', ' ').capitalize())
     ax.set_xlabel('')
