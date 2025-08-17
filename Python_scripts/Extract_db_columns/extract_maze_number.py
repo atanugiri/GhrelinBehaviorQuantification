@@ -135,7 +135,7 @@ def update_maze_numbers_in_db(conn, dlc_table_name, prefix_to_animals):
                 print(f"[✓] {video_name} → {mother_video} → maze {maze_number}")
 
                 cur.execute(
-                    f"UPDATE {dlc_table_name} SET maze_number = %s WHERE id = %s",
+                    f"UPDATE {dlc_table_name} SET maze = %s WHERE id = %s",
                     (int(maze_number), int(row['id']))
                 )
 
