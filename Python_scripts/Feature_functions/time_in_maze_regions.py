@@ -1,97 +1,83 @@
 from typing import Dict
 import pandas as pd
+import numpy as np
+
+def _corner_from_center(cx, cy, tol=1e-6):
+    """Map DB (center_x, center_y) to a corner name or None if geometric center/missing."""
+    if pd.isna(cx) or pd.isna(cy):
+        return None
+    if abs(cx - 0.5) <= tol and abs(cy - 0.5) <= tol:
+        return None  # geometric center -> no task-specific corner
+    ix = 0 if cx <= 0.5 + tol else 1
+    iy = 0 if cy <= 0.5 + tol else 1
+    return { (0,0): 'corner_UL', (1,0): 'corner_UR', (0,1): 'corner_LL', (1,1): 'corner_LR' }[(ix, iy)]
 
 def compute_time_in_maze_regions(
     conn, trial_id, table='dlc_table', bodypart='Head',
-    shape = 'square',  # 'square' or 'circle'
-    size = 0.5, return_fraction = True, plot_maze = False
+    shape='square',  # 'square' or 'circle'; circle uses diameter=size
+    size=0.5, return_fraction=True, plot_maze=False
 ) -> Dict[str, float]:
-    
-    """
-    Compute time spent in 4 corner regions + center + task-specific corner (from get_center_for_trial).
-    Each region can be square (side=size) or circle (diameter=size), centered at corners or center.
 
-    Returns:
-        Dict with: 'corner_total', 'center', 'task_specific_corner'
     """
+    Compute time in 4 corner regions + center + task-specific corner (from DB center_x, center_y).
+    Returns dict with: 'corner_total', 'center', 'task_specific_corner'
+    """
+
+    # 1) Trajectory
     from Python_scripts.Data_analysis.normalized_bodypart import get_normalized_bodypart
-    from Python_scripts.Feature_functions.get_center_for_trial import get_center_for_trial
-    import numpy as np
-    import pandas as pd
-
-    # 1. Get normalized trajectory
     x, y = get_normalized_bodypart(trial_id, conn, bodypart, normalize=True, interpolate=True)
     if x is None or y is None:
         raise ValueError(f"Missing normalized data for trial {trial_id}")
-
-    # 2. Frame rate
-    df = pd.read_sql_query(f"SELECT frame_rate FROM {table} WHERE id = %s", conn, params=(trial_id,))
-    if df.empty or pd.isna(df['frame_rate'][0]):
-        raise ValueError(f"Missing frame rate for trial {trial_id}")
-    fps = df['frame_rate'][0]
-    dt = 1.0 / fps
-    n_frames = len(x)
     xy = np.stack((x, y), axis=1)
-    half = size / 2
+    n_frames = len(x)
 
-    # 3. Define centers of 5 regions
+    # 2) One query for meta
+    meta = pd.read_sql_query(
+        f"SELECT frame_rate, center_x, center_y FROM {table} WHERE id = %s",
+        conn, params=(trial_id,)
+    )
+    if meta.empty or pd.isna(meta.at[0, 'frame_rate']):
+        raise ValueError(f"Missing frame rate for trial {trial_id}")
+    fps = float(meta.at[0, 'frame_rate'])
+    cx_db, cy_db = meta.at[0, 'center_x'], meta.at[0, 'center_y']
+    dt = 1.0 / fps
+
+    # 3) Region centers
     region_centers = {
         'corner_UL': (0.0, 0.0),
         'corner_UR': (1.0, 0.0),
         'corner_LL': (0.0, 1.0),
         'corner_LR': (1.0, 1.0),
-        'center':    (0.5, 0.5)
+        'center':    (0.5, 0.5),
     }
+    half = size / 2
 
-    # 4. Compute time/fraction in each region
+    # 4) Occupancy
     region_values = {}
-    masks = {}
     for name, (cx, cy) in region_centers.items():
         if shape == 'square':
-            x0, x1 = cx - half, cx + half
-            y0, y1 = cy - half, cy + half
-            mask = (x >= x0) & (x <= x1) & (y >= y0) & (y <= y1)
+            mask = (x >= cx - half) & (x <= cx + half) & (y >= cy - half) & (y <= cy + half)
         elif shape == 'circle':
-            d = np.linalg.norm(xy - [cx, cy], axis=1)
-            mask = d <= half
+            mask = np.linalg.norm(xy - [cx, cy], axis=1) <= half
         else:
             raise ValueError("shape must be 'square' or 'circle'")
-        masks[name] = mask
-        val = np.sum(mask) / n_frames if return_fraction else np.sum(mask) * dt
-        region_values[name] = val
+        count = np.count_nonzero(mask)
+        region_values[name] = (count / n_frames) if return_fraction else (count * dt)
 
-    # 5. Get task-specific corner region
-    task_center = get_center_for_trial(trial_id, conn, table)
-    if task_center == (0, 0):
-        task_region = 'corner_UL'
-    elif task_center == (1, 0):
-        task_region = 'corner_UR'
-    elif task_center == (0, 1):
-        task_region = 'corner_LL'
-    elif task_center == (1, 1):
-        task_region = 'corner_LR'
-    else:
-        print(f"[WARNING] Unknown task center: {task_center}, returning NaN for task-specific corner")
-        task_region = None
-
+    # 5) Task-specific corner from DB
+    task_region = _corner_from_center(cx_db, cy_db)
     result = {
-        'corner_total': sum(region_values[r] for r in ['corner_UL', 'corner_UR', 'corner_LL', 'corner_LR']),
-        'center': region_values['center']
+        'corner_total': sum(region_values[k] for k in ('corner_UL','corner_UR','corner_LL','corner_LR')),
+        'center': region_values['center'],
+        'task_specific_corner': region_values[task_region] if task_region else np.nan,
     }
 
-    if task_region:
-        result['task_specific_corner'] = region_values[task_region]
-    else:
-        result['task_specific_corner'] = np.nan
-
-    # 6. Optional plot
+    # 6) Optional plot
     if plot_maze:
         import matplotlib.pyplot as plt
         from matplotlib.patches import Rectangle, Circle
-
         fig, ax = plt.subplots(figsize=(5, 5))
         ax.scatter(x, y, s=2, alpha=0.6, label='Trajectory')
-
         for name, (cx, cy) in region_centers.items():
             if shape == 'square':
                 patch = Rectangle((cx - half, cy - half), size, size,
@@ -103,13 +89,9 @@ def compute_time_in_maze_regions(
                                linestyle='--', fill=False)
             ax.add_patch(patch)
             ax.text(cx, cy, name, fontsize=8, ha='center', va='center')
-
-        ax.set_xlim(-0.1, 1.1)
-        ax.set_ylim(1.1, -0.1)
-        ax.set_aspect('equal')
+        ax.set_xlim(-0.1, 1.1); ax.set_ylim(1.1, -0.1); ax.set_aspect('equal')
         ax.set_title(f'Trial {trial_id}: Regions ({shape})')
-        plt.tight_layout()
-        plt.show()
+        plt.tight_layout(); plt.show()
 
     return result
 
