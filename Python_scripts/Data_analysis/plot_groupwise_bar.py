@@ -65,8 +65,8 @@ def plot_groupwise_bar(df, y='total_distance', title=None, ylabel=None,
         else:
             p_str = 'n.s.'
     
-        y_max = df[y].max()
-        y_text = y_max * 0.9  # Position stars just above tallest bar/box
+        y_max = df[y].mean()
+        y_text = y_max  # Position stars just above tallest bar/box
     
         # Place stars
         ax.text(0.5, y_text, p_str, ha='center', fontsize=14, fontweight='bold')
