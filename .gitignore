@@ -24,3 +24,6 @@ Thumbs.db
 
 # Folders
 data/
+
+# System specific notebook
+DLC-Jupyter-Notebooks/10_DLCjupyter.ipnyb
