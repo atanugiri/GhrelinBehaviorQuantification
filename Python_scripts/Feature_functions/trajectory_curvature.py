@@ -18,10 +18,10 @@ def _get_frame_rate(conn: PGConnection, trial_id: int) -> float:
 
 def compute_trajectory_curvature(conn: PGConnection,
                                  trial_id: int,
-                                 bodypart: str = 'Head',
+                                 bodypart: str = 'Midback',
                                  time_limit: float = None,   # <-- default None
                                  smooth: bool = True,
-                                 window: int = 5,
+                                 window: int = 19,
                                  speed_thresh: float = 1e-2) -> Tuple[List[float], float]:
     """
     Compute trajectory curvature for a given trial using normalized/interpolated coordinates.
