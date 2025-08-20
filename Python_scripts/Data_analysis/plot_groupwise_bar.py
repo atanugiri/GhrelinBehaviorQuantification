@@ -1,7 +1,19 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-from scipy.stats import ranksums
+from scipy.stats import ranksums, ttest_ind, f_oneway
+
+def _p_to_star(pval: float) -> str:
+    if pval < 0.0001:
+        return '****'
+    elif pval < 0.001:
+        return '***'
+    elif pval < 0.01:
+        return '**'
+    elif pval < 0.05:
+        return '*'
+    else:
+        return 'n.s.'
 
 def plot_groupwise_bar(df, y='total_distance', title=None, ylabel=None,
                        figsize=(6, 4), plot_type='bar', order=None,
@@ -45,32 +57,31 @@ def plot_groupwise_bar(df, y='total_distance', title=None, ylabel=None,
         raise ValueError("plot_type must be either 'bar' or 'box'.")
 
     # Optional overlay of individual points
-    if show_points:
-        sns.stripplot(data=df, x='group', y=y, order=order,
-                      color='black', size=4, jitter=True, ax=ax)
-
     if show_stats and len(order) == 2:
         vals1 = df[df['group'] == order[0]][y]
         vals2 = df[df['group'] == order[1]][y]
-        stat, pval = ranksums(vals1, vals2)
     
-        if pval < 0.0001:
-            p_str = '****'
-        elif pval < 0.001:
-            p_str = '***'
-        elif pval < 0.01:
-            p_str = '**'
-        elif pval < 0.05:
-            p_str = '*'
-        else:
-            p_str = 'n.s.'
+        # --- tests ---
+        stat_r, p_r = ranksums(vals1, vals2)
+        stat_t, p_t = ttest_ind(vals1, vals2, equal_var=False, nan_policy='omit')
+        stat_a, p_a = f_oneway(vals1, vals2)  # same as t-test in 2 groups, but ok
     
-        y_max = df[y].mean()
-        y_text = y_max  # Position stars just above tallest bar/box
+        # --- convert to stars ---
+        p_str_r = f"Ranksums: {_p_to_star(p_r)}"
+        p_str_t = f"t-test: {_p_to_star(p_t)}"
+        p_str_a = f"ANOVA: {_p_to_star(p_a)}"
     
-        # Place stars
-        ax.text(0.5, y_text, p_str, ha='center', fontsize=14, fontweight='bold')
-
+        # --- positioning ---
+        y_base = df[y].mean() * 1.1
+        line_spacing = 0.05 * y_base  # vertical spacing
+    
+        # --- plot each line ---
+        ax.text(0.5, y_base, p_str_r, ha='center', va='bottom',
+                fontsize=12, fontweight='bold')
+        ax.text(0.5, y_base + line_spacing, p_str_t, ha='center', va='bottom',
+                fontsize=12, fontweight='bold')
+        ax.text(0.5, y_base + 2*line_spacing, p_str_a, ha='center', va='bottom',
+                fontsize=12, fontweight='bold')
 
     ax.set_ylabel(ylabel if ylabel else y.replace('_', ' ').capitalize())
     ax.set_xlabel('')
