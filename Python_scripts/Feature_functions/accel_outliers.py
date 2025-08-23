@@ -10,14 +10,10 @@ def _mad(x: np.ndarray) -> float:
     Median Absolute Deviation (robust spread). NaNs ignored.
     """
     x = np.asarray(x, dtype=float)
-    # print(f"[INFO] Analyzing x: type = {type(x)}, x = {x[:5]}")
     x = x[np.isfinite(x)]
-    # print(f"[INFO] Analyzing x: size = {x.size}")    
     if x.size == 0:
         return np.nan
     med = np.median(x)
-    # print(f"[INFO] Analyzing med: med = {med}")   
-    # print(f"[INFO] Analyzing _mad return: mad = {np.median(np.abs(x - med))}")    
     return np.median(np.abs(x - med))
 
 def accel_outlier_mask(accel: np.ndarray, mad_thresh: float = 3.5) -> np.ndarray:
@@ -25,11 +21,8 @@ def accel_outlier_mask(accel: np.ndarray, mad_thresh: float = 3.5) -> np.ndarray
     Boolean mask of acceleration outliers using MAD-based z-scores.
     """
     accel = np.asarray(accel, dtype=float)
-    # print(f"[INFO] Analyzing accel: type = {type(accel)}, accel = {accel[:5]}")
     med = np.median(accel)
-    # print(f"[INFO] Analyzing med: type = {type(med)}, med = {med}")
     mad = _mad(accel)
-    # print(f"[INFO] Analyzing mad: type = {type(mad)}, mad = {mad}")
     if not np.isfinite(mad) or mad == 0:
         return np.zeros_like(accel, dtype=bool)
     z = 0.6745 * (accel - med) / mad  # scale MAD toward std under Normal
@@ -57,8 +50,7 @@ def accel_outliers_for_trial(
     trial_id: int,
     conn,
     table: str = "dlc_table",
-    bodypart: str = "Head",
-    # Parameters forwarded to your compute_motion_features:
+    bodypart: str = "Midback",
     time_limit: Optional[float] = None,
     smooth: bool = False,
     window: int = 5,
@@ -69,7 +61,7 @@ def accel_outliers_for_trial(
 ) -> Dict[str, Any]:
     """
     Summarize acceleration outliers for one trial.
-    Uses your compute_motion_features(...) to get per-frame acceleration,
+    Uses compute_motion_features(...) to get per-frame acceleration,
     and DB to get (trial_length, frame_rate) for normalization and binning.
     """
     from Python_scripts.Feature_functions.motion_features import compute_motion_features
@@ -117,7 +109,7 @@ def batch_accel_outliers(
     conn,
     trial_ids: List[int],
     table: str = "dlc_table",
-    bodypart: str = "Head",
+    bodypart: str = "Midback",
     time_limit: Optional[float] = None,
     smooth: bool = False,
     window: int = 5,
@@ -141,6 +133,7 @@ def batch_accel_outliers(
                 total_outliers=np.nan, rate_per_min=np.nan,
                 counts_per_min=None, error=str(e)
             ))
+            
     df = pd.DataFrame(rows)
     df["n_minutes"] = df["counts_per_min"].apply(lambda v: len(v) if isinstance(v, list) else np.nan)
     return df
