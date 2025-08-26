@@ -89,11 +89,11 @@ def stopping_points_bbox_for_trial(
     trial_id: int,
     conn,
     table: str = "dlc_table",
-    bodypart: str = "Head",
+    bodypart: str = "Midback",
     time_limit: Optional[float] = None,
     dx_thresh: float = 0.1,
     dy_thresh: float = 0.1,
-    min_stop_duration_s: float = 5.0,
+    min_stop_duration_s: float = 1.5,
     normalize: bool = True,
     interpolate: bool = True,
 ) -> Dict[str, Any]:
