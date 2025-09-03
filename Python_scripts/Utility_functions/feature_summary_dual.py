@@ -44,9 +44,9 @@ def plot_dual_comparison_grid(
                 facecolor=right_face, edgecolor=edgecolor, lw=lw
             ))
 
-            # placeholder labels
-            ax.text(j - 0.25, i, f"{left_label}\np=", ha="center", va="center", fontsize=fontsize_cell)
-            ax.text(j + 0.25, i, f"{right_label}\np=", ha="center", va="center", fontsize=fontsize_cell)
+            # # placeholder labels
+            # ax.text(j - 0.25, i, f"{left_label}\np=", ha="center", va="center", fontsize=fontsize_cell)
+            # ax.text(j + 0.25, i, f"{right_label}\np=", ha="center", va="center", fontsize=fontsize_cell)
 
     # Set limits and orientation
     ax.set_xlim(-0.5, n_features - 0.5)
