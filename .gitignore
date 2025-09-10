@@ -18,6 +18,8 @@ venv/
 # Files
 *pdf
 *csv
+*Rhistory
+*log
 
 # System files
 Thumbs.db
