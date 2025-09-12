@@ -1,0 +1,15 @@
+% --- macros that Pandoc can expand before it reads main.tex ---
+% Map LaTeX-y commands to things Pandoc/Word understands well
+\providecommand{\path}[1]{\texttt{#1}}   % filesystem paths
+\providecommand{\code}[1]{\texttt{#1}}   % generic inline code
+\providecommand{\cmd}[1]{\texttt{\$ #1}} % shell commands
+\providecommand{\pkg}[1]{\texttt{#1}}    % package names
+\providecommand{\opt}[1]{\texttt{--#1}}  % long options
+\providecommand{\flag}[1]{\texttt{-#1}}  % short flags
+
+% (Optional) if you already have pandoc-macros.tex, include it here too:
+% \input{pandoc-macros.tex}
+
+% Now include the real document (with \documentclass, etc.)
+\input{main.tex}
+% --- end of pandoc-macros.tex ---
