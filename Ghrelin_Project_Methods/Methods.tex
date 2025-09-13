@@ -1,14 +1,17 @@
 \section{Methods}
 
-\subsection{Video Acquisition and Preprocessing}
-Behavioral data were obtained from video recordings in which a single camera captured four mazes simultaneously. Each recording was therefore structured as a single video file containing the activity of animals in four spatially separated arenas. The videos can be found at \href{https://doi.org/10.7910/DVN/WHH7W2}{Harvard Dataverse}. To enable individual analysis of each maze, videos were automatically split into four quadrants using a custom Python script \href{https://github.com/atanugiri/GhrelinBehaviorQuantification/blob/main/Python_scripts/Utility_functions/split_videos_by_quadrants.py}{\path{split_videos_by_quadrants.py}}.
-Each split video was stored and processed independently in subsequent steps [Link to data deposit]. The split videos can be found at \href{https://doi.org/10.7910/DVN/WHH7W2}{Harvard Dataverse}.
+\subsection{Preprocessing of Recorded Videos}
+Behavioral data were obtained from video recordings in which a single camera captured four mazes simultaneously. Each recording was therefore separated as a single video file containing the activity of animals in four independent separated arenas. The videos can be found at \href{https://doi.org/10.7910/DVN/WHH7W2}{Harvard Dataverse}. To enable individual analysis of each maze, videos were automatically split into four quadrants using a custom Python script \href{https://github.com/atanugiri/GhrelinBehaviorQuantification/blob/main/Python_scripts/Utility_functions/split_videos_by_quadrants.py}{\path{split_videos_by_quadrants.py}}.
+Each split video was stored and processed independently in subsequent steps [Link to data deposit]. The split videos can be found at \href{https://doi.org/10.7910/DVN/WHH7W2}{same data deposit}. This preprocessing was performed specifically to enable quantitative motor analysis of individual animals.
 \subsection{Pose Estimation with DeepLabCut}
-Pose estimation was performed using \textbf{DeepLabCut (v3.0.0rc9)} [Mathis et al., 2018], running with \textbf{PyTorch v2.7.1} and CUDA acceleration on the laboratory workstation, equipped with an NVIDIA T100 GPU. Training was carried out entirely on this GPU system. After model training and generation of pose estimation output, all downstream analyses (feature extraction, statistical analysis) were conducted on a local Apple Silicon laptop. A DeepLabCut project was first initialized with representative videos. Following project creation, additional recordings were incorporated using the command:
+Pose estimation was performed using \textbf{DeepLabCut (v3.0.0rc9)} [Mathis et al., 2018], running with \textbf{PyTorch v2.7.1} and CUDA acceleration on the laboratory workstation, equipped with an NVIDIA T100 GPU. Training was carried out entirely on this GPU system. After model training and generation of pose estimation output, all downstream analyses (feature extraction, statistical analysis) were conducted on a local Apple Silicon laptop. A DeepLabCut project was first initialized with representative videos.\\
+\begin{enumerate}[label=\alph*.]
+    \item Following project creation, additional recordings were incorporated using the command:
 \begin{lstlisting}[language=Python]
 deeplabcut.add_new_videos(config_path, new_videos, copy_videos=True, extract_frames=False)
 \end{lstlisting}
-For frame extraction, we sampled five frames per video using automatic uniform sampling. Each frame was cropped manually to retain only the maze region, thereby excluding irrelevant portions of the field of view:
+For frame extraction, we sampled five frames per video using automatic uniform sampling. 
+    \item Each frame was cropped manually to retain only the maze region, thereby excluding irrelevant portions of the field of view:
 \begin{lstlisting}[language=Python]
 deeplabcut.extract_frames(
     config_path, mode='automatic',
@@ -17,11 +20,12 @@ deeplabcut.extract_frames(
     userfeedback=True
 )
 \end{lstlisting}
-The extracted frames were then labeled interactively using:
+    \item The extracted frames were then labeled interactively using:
 \begin{lstlisting}[language=Python]
 deeplabcut.label_frames(config_path)
 \end{lstlisting}
-This invoked the \textbf{napari-DeepLabCut GUI}, which allowed manual annotation of predefined body parts specified in the configuration file (Head, Neck, Midback, Lowerback, Tailbase, and four maze corners). Labels were visually verified with:
+This invoked the \textbf{napari-DeepLabCut GUI}, which allowed manual annotation of predefined body parts specified in the configuration file (Head, Neck, Midback, Lowerback, Tailbase, and four maze corners). 
+    \item Labels were visually verified with:
 \begin{lstlisting}[language=Python]
 deeplabcut.check_labels(config_path)
 \end{lstlisting}
@@ -32,11 +36,11 @@ deeplabcut.check_labels(config_path)
     \label{fig:myfigure}
 \end{figure}
 
-before generating the training dataset with:
+    \item before generating the training dataset with:
 \begin{lstlisting}[language=Python]
 deeplabcut.create_training_dataset(config_path)
 \end{lstlisting}
-Network training was performed with the following settings:
+    \item Network training was performed with the following settings:
 \begin{lstlisting}[language=Python]
 deeplabcut.train_network(
     config_path,
@@ -50,11 +54,12 @@ deeplabcut.train_network(
 )
 \end{lstlisting}
 A ResNet-50 backbone was used, and training proceeded for 200 epochs, with snapshots saved at 5-epoch intervals. 
-After training, network accuracy was assessed with:
+    \item After training, network accuracy was assessed with:
 \begin{lstlisting}[language=Python]
 deeplabcut.evaluate_network(config_path, Shuffles=[3], plotting=True)
 \end{lstlisting}
-Both quantitative error metrics and diagnostic plots were inspected, comparing manual labels against predicted points across training and test frames. Once satisfactory accuracy was achieved, the trained network was applied to all videos using:
+Both quantitative error metrics and diagnostic plots were inspected, comparing manual labels against predicted points across training and test frames. 
+    \item Once satisfactory accuracy was achieved, the trained network was applied to all videos using:
 \begin{lstlisting}[language=Python]
 deeplabcut.analyze_videos(
     config_path,
@@ -64,7 +69,7 @@ deeplabcut.analyze_videos(
     save_as_csv=True
 )
 \end{lstlisting}
-The resulting trajectory files ($x, y, likelihood$ per body part and frame) were further refined using the median filter implementation provided by DeepLabCut:
+    \item The resulting trajectory files ($x, y, likelihood$ per body part and frame) were further refined using the median filter implementation provided by DeepLabCut:
 \begin{lstlisting}[language=Python]
 deeplabcut.filterpredictions(
     config_path,
@@ -74,8 +79,8 @@ deeplabcut.filterpredictions(
     p_bound=0.05
 )
 \end{lstlisting}
+\end{enumerate}
 Filtered CSV files were then used as the input for all downstream feature extraction analyses.
-
 
 \subsection*{Feature Extraction}
 \subsubsection{Trajectory curvature: extraction, aggregation, and statistics}
