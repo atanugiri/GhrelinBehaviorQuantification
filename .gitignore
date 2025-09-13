@@ -20,6 +20,10 @@ venv/
 *csv
 *Rhistory
 *log
+*aux
+*fls
+*.synctex.gz
+*.docx
 
 # System files
 Thumbs.db
