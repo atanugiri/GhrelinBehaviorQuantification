@@ -11,17 +11,40 @@ def _get_trial_meta(conn, trial_id: int, table: str = "dlc_table") -> Tuple[Opti
     Returns (trial_length_seconds, frame_rate_fps) from the DB (or (None, None) if missing).
     Uses psycopg2 '%s' style with sqlite fallback to '?'.
     """
-    q = f"SELECT trial_length, frame_rate FROM {table} WHERE id = %s;"
+    # Use a DB cursor rather than pandas.read_sql_query to avoid pandas' SQLAlchemy
+    # warning when given a DBAPI connection (psycopg2, sqlite3, etc.). This also
+    # keeps the function dependency-light and works for both drivers.
+    q_psycopg = f"SELECT trial_length, frame_rate FROM {table} WHERE id = %s;"
+    q_sqlite = f"SELECT trial_length, frame_rate FROM {table} WHERE id = ?;"
+
+    cur = None
     try:
-        df = pd.read_sql_query(q, conn, params=(trial_id,))
-    except Exception:
-        q = f"SELECT trial_length, frame_rate FROM {table} WHERE id = ?;"
-        df = pd.read_sql_query(q, conn, params=(trial_id,))
-    if df.empty:
-        return None, None
-    length = float(df.loc[0, "trial_length"]) if "trial_length" in df.columns and pd.notna(df.loc[0, "trial_length"]) else None
-    fps    = float(df.loc[0, "frame_rate"])  if "frame_rate"  in df.columns and pd.notna(df.loc[0, "frame_rate"])  else None
-    return length, fps
+        cur = conn.cursor()
+        # Try psycopg2 style first
+        try:
+            cur.execute(q_psycopg, (trial_id,))
+        except Exception:
+            # Fallback to sqlite-style parameter marker
+            cur.execute(q_sqlite, (trial_id,))
+
+        rows = cur.fetchall()
+        if not rows:
+            return None, None
+
+        # Build a dict from the first row using cursor.description
+        cols = [d[0] for d in cur.description] if cur.description else []
+        row = rows[0]
+        rowd = dict(zip(cols, row))
+
+        length = float(rowd.get("trial_length")) if rowd.get("trial_length") is not None else None
+        fps = float(rowd.get("frame_rate")) if rowd.get("frame_rate") is not None else None
+        return length, fps
+    finally:
+        if cur is not None:
+            try:
+                cur.close()
+            except Exception:
+                pass
 
 def _runs_from_bbox(x: np.ndarray, y: np.ndarray,
                     dx_thresh: float, dy_thresh: float,
