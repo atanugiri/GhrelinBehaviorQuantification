@@ -1,38 +1,48 @@
-# angle_features.py
+"""
+Angle Features Module
+
+This module computes angle-based behavioral features from DeepLabCut pose data,
+including head-body misalignment, tail bend indices, and angular velocities.
+
+The main functions are:
+- angle_features_for_trial(): Compute angle features for a single trial
+- batch_angle_features(): Compute angle features for multiple trials
+
+Author: DeepLabCut Analysis Pipeline
+"""
 
 import numpy as np
 import pandas as pd
 from typing import Dict, Any, Optional, Tuple, List
 
-from Python_scripts.Feature_functions.stopping_points import _get_trial_meta
+# Import utilities from the new db_utils module
+from .db_utils import get_trial_meta, get_csv_path
 
-# ---------- math utils (unchanged) ----------
+# ---------- math utils ----------
 def _angle_of(v: np.ndarray) -> np.ndarray:
+    """Compute the angle of 2D vectors."""
     return np.arctan2(v[:, 1], v[:, 0])
 
 def _unit(v: np.ndarray) -> np.ndarray:
+    """Convert vectors to unit vectors, handling zero-length vectors."""
     n = np.linalg.norm(v, axis=1, keepdims=True)
     with np.errstate(invalid='ignore', divide='ignore'):
         return np.where(n > 0, v / n, np.nan)
 
 def _angle_between(u: np.ndarray, v: np.ndarray) -> np.ndarray:
+    """Compute the signed angle between two sets of 2D vectors."""
     uu, vv = _unit(u), _unit(v)
     dot = np.sum(uu * vv, axis=1)
     cross_z = uu[:, 0]*vv[:, 1] - uu[:, 1]*vv[:, 0]
     return np.arctan2(cross_z, dot)
 
 def _unwrap(a: np.ndarray) -> np.ndarray:
+    """Unwrap angles to remove discontinuities."""
     return np.unwrap(a)
 
-# ---------- I/O helpers (unchanged) ----------
-def _read_csv_path(conn, trial_id: int, table: str = "dlc_table") -> str:
-    q = f"SELECT csv_file_path FROM {table} WHERE id = %s;"
-    df = pd.read_sql_query(q, conn, params=(trial_id,))
-    if df.empty or pd.isna(df.loc[0, "csv_file_path"]):
-        raise ValueError(f"csv_file_path not found for id={trial_id} in '{table}'")
-    return str(df.loc[0, "csv_file_path"])
-
+# ---------- I/O helpers ----------
 def _load_bodyparts_raw(csv_path: str, bodyparts: List[str], likelihood_threshold: float = 0.5) -> Dict[str, np.ndarray]:
+    """Load and interpolate bodypart coordinates from DeepLabCut CSV file."""
     df = pd.read_csv(csv_path, header=[1, 2], index_col=0)
     out: Dict[str, np.ndarray] = {}
     for bp in bodyparts:
@@ -55,12 +65,26 @@ def angle_features_for_trial(
     likelihood_threshold: float = 0.5,
     smooth_window: Optional[int] = None,
 ) -> Tuple[Dict[str, np.ndarray], Dict[str, Dict[str, float]], np.ndarray]:
-    trial_length_s, frame_rate = _get_trial_meta(conn, trial_id, table=table)
+    """
+    Compute angle-based features for a single trial.
+    
+    Args:
+        conn: Database connection
+        trial_id: Trial identifier
+        table: Database table name
+        likelihood_threshold: Minimum likelihood for pose data
+        smooth_window: Window size for smoothing (optional)
+    
+    Returns:
+        Tuple of (timeseries_dict, summary_dict, valid_frames)
+    """
+    trial_length_s, frame_rate = get_trial_meta(conn, trial_id, table=table)
     if frame_rate is None or not np.isfinite(frame_rate) or frame_rate <= 0:
         raise ValueError(f"Missing/invalid frame_rate for trial {trial_id} in '{table}'.")
-    csv_path = _read_csv_path(conn, trial_id, table=table)
+    csv_path = get_csv_path(conn, trial_id, table=table)
     
-    print(f"[INFO] csv path: {csv_path}") #TBD
+    # Optional debug output - remove in production
+    # print(f"[INFO] csv path: {csv_path}")
 
     parts = ["Head", "Neck", "Midback", "Lowerback", "Tailbase"]
     B = _load_bodyparts_raw(csv_path, parts, likelihood_threshold=likelihood_threshold)
@@ -140,7 +164,7 @@ def angle_features_for_trial(
     valid = np.ones(len(theta_body), dtype=bool)
     return timeseries, summary, valid
 
-# ---------- batch (short, no try/except) ----------
+# ---------- batch processing ----------
 def batch_angle_features(
     conn,
     id_list: List[int],
@@ -148,6 +172,19 @@ def batch_angle_features(
     likelihood_threshold: float = 0.5,
     smooth_window: Optional[int] = None,
 ) -> pd.DataFrame:
+    """
+    Compute angle features for multiple trials.
+    
+    Args:
+        conn: Database connection
+        id_list: List of trial IDs to process
+        table: Database table name
+        likelihood_threshold: Minimum likelihood for pose data
+        smooth_window: Window size for smoothing (optional)
+    
+    Returns:
+        DataFrame with angle features for all trials
+    """
     rows: List[Dict[str, Any]] = []
     for tid in id_list:
         ts, sm, _ = angle_features_for_trial(
@@ -187,3 +224,61 @@ def batch_angle_features(
             ang_vel_body_p95_min       =ang_p95_per_min,
         ))
     return pd.DataFrame(rows)
+
+
+def main(conn, trial_id):
+    """
+    Simple demo of angle_features_for_trial().
+    
+    Args:
+        conn: Database connection (required)
+        trial_id: Trial ID to analyze (required)
+    """
+    print("Angle Features Demo")
+    print("=" * 30)
+    print(f"📊 Trial ID: {trial_id}")
+    
+    try:
+        print(f"🧮 Computing angle features for trial {trial_id}...")
+        timeseries, summary, valid = angle_features_for_trial(conn, trial_id)
+        
+        print(f"✅ Success! Processed {len(timeseries['theta_body'])} frames")
+        print(f"📈 Head-body misalignment (mean): {summary['head_body_misalignment']['mean']:.3f} rad")
+        print(f"📈 Tail bend index (mean): {summary['tail_bend_index']['mean']:.3f} rad")
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        print("Check trial ID, CSV file, and database connection")
+
+
+if __name__ == '__main__':
+    import argparse
+    import sys
+    from pathlib import Path
+    
+    # Add project root to path for config import
+    project_root = Path(__file__).parents[2]
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+    
+    from Python_scripts.config import get_conn
+    
+    parser = argparse.ArgumentParser(description='Run angle features analysis on a trial')
+    parser.add_argument('trial_id', type=int, help='Trial ID to analyze')
+    
+    args = parser.parse_args()
+    
+    try:
+        print("🔗 Connecting to database...")
+        conn = get_conn()
+        print(f"✅ Connected! Running analysis for trial {args.trial_id}")
+        
+        main(conn, args.trial_id)
+        
+        conn.close()
+        print("🔗 Database connection closed")
+        
+    except Exception as e:
+        print(f"❌ Failed: {e}")
+        print("Make sure your database credentials are set in .env file")
+        sys.exit(1)
