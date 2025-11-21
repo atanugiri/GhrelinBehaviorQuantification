@@ -29,9 +29,7 @@ venv/
 Thumbs.db
 
 # Folders
-# Folders
 # keep `data/` tracked (CSV metadata lives here). Do NOT add raw videos to the repo.
-data/
 
 # System specific notebook
 DLC-Jupyter-Notebooks/10_DLCjupyter.ipynb

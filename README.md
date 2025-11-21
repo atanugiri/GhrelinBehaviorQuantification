@@ -49,6 +49,17 @@ jupyter notebook
 
 - Git behaviour: this repository's top-level `.gitignore` intentionally *allows* CSVs and the `data/` folder to be tracked, and *ignores* common video file extensions (for example `*.mp4`, `*.avi`, `*.mov`) so raw videos are not accidentally committed. See `data/DATA_README.md` for more details on what to place in `data/`.
 
+### Using an external data archive (recommended for large datasets)
+
+For full datasets (raw videos + corresponding DeepLabCut CSV exports) we recommend hosting the complete data externally (for example, Harvard Dataverse) rather than committing large files to GitHub. In our workflow the full dataset is deposited at Harvard Dataverse (DOI: `https://doi.org/10.7910/DVN/WHH7W2`). To run the notebooks locally, instruct users to download and extract the Dataverse archive into the repository `data/` directory so the notebooks can find the expected CSVs and metadata.
+
+Suggested steps for users (place in Methods/Supplementary or README):
+
+1. Download the dataset archive from the Dataverse record: `https://doi.org/10.7910/DVN/WHH7W2`.
+2. Extract the archive into the repository `data/` directory (for example `tar -xzf ghrelin_dataset.tar.gz -C data/` or unzip to `data/`).
+3. Verify checksums (if provided) with `shasum -a 256 -c data/SHA256SUMS`.
+4. Run the notebooks from the project root so they can find metadata CSVs under `data/` or via the path returned by `Python_scripts.config.get_data_dir()`.
+
 ### Checksums and minimal sample data
 
 - For reproducibility and archival, we recommend adding SHA256 checksums for CSVs placed in `data/`. Include a `data/SHA256SUMS` file with lines like `SHA256  filename`. If you want reviewers to run the notebooks without full datasets, include a tiny sample CSV named `dlc_table_sample.csv` and document it in `data/DATA_README.md`.
@@ -74,6 +85,12 @@ jupyter notebook
 
 - To reproduce: clone the repository, change to the project root, create the conda environment from `environment.yml`, and run the notebooks from the project root so imports from `Python_scripts/` resolve.
 - Do not publish absolute local paths (for example `/Users/atanugiri/...`) in the manuscript; use repository-relative paths such as `DLC-Jupyter-Notebooks/37_data_analysis_curvature.ipynb` and `Python_scripts/Feature_functions/trajectory_curvature.py` instead.
+
+### Sample data for quick testing
+
+- A small sanitized sample of the `dlc_table` metadata is included for quick testing: `data/dlc_table_sample.csv`. This file contains a few example rows (IDs, tasks, modulation labels, and placeholder `video_path` entries) so reviewers can run notebooks without downloading the full dataset.
+- To use the sample data: ensure `data/dlc_table_sample.csv` is present and run the notebook from the project root (the notebooks will load CSVs from `data/` when a DB connection is not available).
+- For full analyses use the Dataverse archive (see above) and extract it into `data/`.
 
 ### Code availability
 
