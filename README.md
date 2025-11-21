@@ -47,6 +47,12 @@ jupyter notebook
 - PostgreSQL table: for long-term archival we recommend exporting the `dlc_table` table from PostgreSQL into `data/dlc_table_YYYYMMDD.csv` and committing metadata-only CSVs (not raw videos) or storing raw video files outside the repository (see below).
 - Large data (videos): raw video files should NOT be checked into the git repository. Store large video files on a shared drive, object storage (S3), or lab server and put a small metadata CSV in `data/` that references those locations. Use `Python_scripts.resolve_video_path()` (notebooks) to map stored video paths to local copies.
 
+- Git behaviour: this repository's top-level `.gitignore` intentionally *allows* CSVs and the `data/` folder to be tracked, and *ignores* common video file extensions (for example `*.mp4`, `*.avi`, `*.mov`) so raw videos are not accidentally committed. See `data/DATA_README.md` for more details on what to place in `data/`.
+
+### Checksums and minimal sample data
+
+- For reproducibility and archival, we recommend adding SHA256 checksums for CSVs placed in `data/`. Include a `data/SHA256SUMS` file with lines like `SHA256  filename`. If you want reviewers to run the notebooks without full datasets, include a tiny sample CSV named `dlc_table_sample.csv` and document it in `data/DATA_README.md`.
+
 ## Important notebooks
 
 - `DLC-Jupyter-Notebooks/40_data_analysis_angle_features.ipynb` — calculates and plots angle features and exports summary Excel files.
@@ -68,6 +74,10 @@ jupyter notebook
 
 - To reproduce: clone the repository, change to the project root, create the conda environment from `environment.yml`, and run the notebooks from the project root so imports from `Python_scripts/` resolve.
 - Do not publish absolute local paths (for example `/Users/atanugiri/...`) in the manuscript; use repository-relative paths such as `DLC-Jupyter-Notebooks/37_data_analysis_curvature.ipynb` and `Python_scripts/Feature_functions/trajectory_curvature.py` instead.
+
+### Code availability
+
+- The project source code, notebooks, and environment files supporting analyses are archived at Zenodo: https://zenodo.org/records/17280634. Cite this record when referring to the code used in the manuscript.
 
 ## Development notes
 
