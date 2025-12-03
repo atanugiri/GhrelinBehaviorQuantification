@@ -1,18 +1,31 @@
 # GhrelinBehaviorQuantification
 
-Short README for the `GhrelinBehaviorQuantification` analysis project.
+Behavioral analysis pipeline for DeepLabCut-derived tracking data from ghrelin experiments.
 
 ## Project overview
 
-- Purpose: analysis pipeline for DeepLabCut-derived behavioral tracking data related to ghrelin experiments. Contains Jupyter notebooks for exploratory data analysis and Python scripts to extract/compute behavioral features (e.g., trajectory curvature, angle features, motion metrics) and insert them into a database.
+This repository contains the complete analysis pipeline for quantifying behavioral features from DeepLabCut pose-estimation data. The pipeline computes motion features (velocity, distance), trajectory curvature, and head-body angle features, with statistical comparisons across experimental groups.
 
-## Repository layout (important items)
+## Repository structure
 
-- `environment.yml` : conda environment used for reproducible environments.
-- `DLC-Jupyter-Notebooks/` : analysis notebooks (e.g., `40_data_analysis_angle_features.ipynb`).
-- `Python_scripts/` : reusable scripts and modules including:
-  - `config.py` : provides `get_conn()` and `get_data_dir()` used to connect to Postgres or fallback to CSV.
-  - `Data_analysis/`, `Feature_functions/`, `Extract_db_columns/`, `Insert_to_featuretable/`, `Utility_functions/` : core analysis utilities and helpers.
+- `environment.yml` : Conda environment specification for reproducibility
+- `DLC-Jupyter-Notebooks/` : Analysis notebooks for manuscript figures
+  - `31_data_analysis_distance.ipynb` : Velocity and distance analysis
+  - `37_data_analysis_curvature.ipynb` : Trajectory curvature analysis
+  - `40_data_analysis_angle_features.ipynb` : Head-body misalignment analysis
+- `Python_scripts/` : Core analysis modules
+  - `config.py` : Database connection and data directory configuration
+  - `Feature_functions/` : Feature computation modules
+    - `angle_features.py` : Head-body angle calculations
+    - `motion_features.py` : Velocity, distance, acceleration
+    - `trajectory_curvature.py` : Path curvature computation
+    - `db_utils.py` : Database utility functions
+  - `Data_analysis/` : Analysis and plotting utilities
+    - `fetch_id_list.py` : Trial ID filtering by experimental condition
+    - `plot_groupwise_bar.py` : Statistical bar plots with Welch's t-test
+    - `plot_features.py` : Exploratory plotting functions
+    - `compare_distributions.py` : Distribution comparison utilities
+    - `normalized_bodypart.py` : Coordinate normalization
 - `DATA_DIR` (not a repo file): data directory referenced by `config.get_data_dir()` (used as CSV fallback).
 
 ## Quickstart (local)
@@ -44,7 +57,7 @@ jupyter notebook
 ### Data location
 
 **Primary dataset (DeepLabCut pose-estimation CSVs):**  
-The DeepLabCut pose-estimation output files (CSV format) are archived at Harvard Dataverse: https://doi.org/10.7910/DVN/WHH7W2. To reproduce the analyses, download the Dataverse archive and extract the pose-estimation CSVs into the `data/` directory of the project root.
+The DeepLabCut pose-estimation output files (CSV format) are archived at Harvard Dataverse: https://doi.org/10.7910/DVN/G8CBKJ. To reproduce the analyses, download the Dataverse archive and extract the pose-estimation CSVs into the `data/` directory of the project root.
 
 **Database table (metadata):**  
 The database table (`dlc_table`) containing metadata and trial information is located in the `data/` directory as CSV files (e.g., `dlc_table_*.csv` grouped by experimental condition). A small sample CSV (`dlc_table_sample.csv`) is included in the repository for quick testing without downloading the full dataset.
@@ -67,25 +80,30 @@ Suggested steps for users (place in Methods/Supplementary or README):
 
 - For reproducibility and archival, we recommend adding SHA256 checksums for CSVs placed in `data/`. Include a `data/SHA256SUMS` file with lines like `SHA256  filename`. If you want reviewers to run the notebooks without full datasets, include a tiny sample CSV named `dlc_table_sample.csv` and document it in `data/DATA_README.md`.
 
-## Important notebooks
+## Analysis notebooks
 
-- `DLC-Jupyter-Notebooks/40_data_analysis_angle_features.ipynb` — calculates and plots angle features and exports summary Excel files.
-- `DLC-Jupyter-Notebooks/30_data_analysis.ipynb` and related notebooks — other analyses and visualizations.
+Each notebook performs a complete analysis workflow from data loading to statistical testing and figure generation:
 
-### Code location
+- **`31_data_analysis_distance.ipynb`**: Computes average velocity per minute for each trial, performs parameter sweeps (smoothing window), and generates statistical comparisons between treatment groups using Welch's t-test.
 
-- All analysis code is in `Python_scripts/`. Key subdirectories:
-  - `Python_scripts/Feature_functions/` — feature implementations (e.g., `trajectory_curvature.py`, `angle_features.py`, `motion_features.py`)
-  - `Python_scripts/Data_analysis/` — analysis helpers and plotting utilities (e.g., `compute_binned_curvature_stats.py`, `plot_groupwise_bar.py`)
-  - `Python_scripts/Insert_to_featuretable/` — database insertion utilities
-  - `Python_scripts/Extract_db_columns/` — metadata extraction and normalization
-- Notebooks (in `DLC-Jupyter-Notebooks/`) import these modules by adding the repository root to `sys.path` (see the top cell in notebooks).
+- **`37_data_analysis_curvature.ipynb`**: Calculates trajectory curvature from normalized body part coordinates, performs window size optimization, and compares curvature distributions across experimental groups.
+
+- **`40_data_analysis_angle_features.ipynb`**: Computes head-body misalignment angles, optimizes likelihood thresholds, and generates publication-ready figures with statistical annotations.
+
+All notebooks support both PostgreSQL database connections and CSV fallback mode for offline analysis.
 
 ### Statistical outputs
 
-- Figures and statistical reports generated by the notebooks are saved in the working directory when notebooks are executed from the project root. Typical outputs include PDF figures (e.g., `White_Modulation_2X_{task_name}_ang_likelihood_sweep.pdf`) and Excel summary files (e.g., `10X_White_Angle.xlsx`).
+## Statistical analysis
 
-### Reproducibility notes (data/code/outputs)
+All statistical comparisons use **Welch's t-test** (unpaired, assuming unequal variance) implemented via `scipy.stats.ttest_ind` with `equal_var=False`. The `plot_groupwise_bar()` function automatically computes test statistics, p-values, and Cohen's d effect sizes, annotating figures with significance stars.
+
+### Output files
+
+Notebooks generate publication-ready outputs in the working directory:
+- **PDF figures**: Parameter sweep plots (e.g., `White_2X_AllTask_Head_velocity_window_sweep.pdf`)
+- **Individual figures**: Single condition plots with statistics (e.g., `White_10X_AllTask_velocity.pdf`)
+- **Excel files**: Trial-level data with metadata for data submission (e.g., `10X_White_Velocity.xlsx`, `10X_White_Angle.xlsx`)
 
 - To reproduce: clone the repository, change to the project root, create the conda environment from `environment.yml`, and run the notebooks from the project root so imports from `Python_scripts/` resolve.
 - Do not publish absolute local paths (for example `/Users/atanugiri/...`) in the manuscript; use repository-relative paths such as `DLC-Jupyter-Notebooks/37_data_analysis_curvature.ipynb` and `Python_scripts/Feature_functions/trajectory_curvature.py` instead.
@@ -95,16 +113,19 @@ Suggested steps for users (place in Methods/Supplementary or README):
 - A small sanitized sample of the `dlc_table` metadata is included: `data/dlc_table_sample.csv`. This allows reviewers to run notebooks without downloading the full dataset from Dataverse.
 - To use the sample: run notebooks from the project root (notebooks will load CSVs from `data/` when a DB connection is not available).
 - For full analyses: download the Dataverse archive (https://doi.org/10.7910/DVN/WHH7W2) and extract into `data/`.
+## Module dependencies
 
-### Code availability
-
-- The project source code, notebooks, and environment files supporting analyses are archived at Zenodo: https://zenodo.org/records/17280634. Cite this record when referring to the code used in the manuscript.
+The codebase uses a clean dependency structure:
+- Notebooks import feature computation functions (e.g., `batch_compute_motion_features_per_minute`, `batch_angle_features`)
+- Feature functions use database utilities (`db_utils.py`) and normalization (`normalized_bodypart.py`)
+- All plotting uses `plot_groupwise_bar()` for consistent statistical annotation
+- The `config.py` module handles database connections with automatic CSV fallback
 
 ## Development notes
 
-- To run individual scripts, use `python` from the repository root so imports from `Python_scripts` resolve correctly.
-- Consider adding a `requirements.txt` or a pinned `environment.yml` environment name for easier activation.
-
+- Run notebooks from the repository root to ensure `sys.path` includes `Python_scripts/`
+- The `gastric` conda environment (from `environment.yml`) includes all dependencies
+- For individual script execution: `python -m Python_scripts.Feature_functions.motion_features` (from repo root)
 ## Recommended next steps
 
 - Add `CONTRIBUTING.md` with development guidelines (how to run notebooks, format code, run tests).
