@@ -8,14 +8,13 @@ This folder contains the behavioral analysis data for the project.
 data/
 ├── BlackAnimals/          # DeepLabCut pose estimation CSVs (black strain)
 ├── WhiteAnimals/          # DeepLabCut pose estimation CSVs (white strain)
-├── dlc_table_*.csv        # Metadata table (optional, for CSV fallback)
-└── dlc_table_sample.csv   # Sample metadata for testing
+└── dlc_table.csv          # Trial metadata (tracked in repository)
 ```
 
 ## Data Sources
 
 - **Pose estimation data**: Download from [Harvard Dataverse](https://doi.org/10.7910/DVN/G8CBKJ)
-- **Metadata**: Export from PostgreSQL or use CSV fallback
+- **Metadata**: `dlc_table.csv` contains trial IDs, experimental conditions, and CSV paths
 
 ## Setup After Download
 
