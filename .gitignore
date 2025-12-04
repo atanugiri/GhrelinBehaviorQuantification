@@ -22,8 +22,13 @@ venv/
 *.synctex.gz
 *.docx
 
-# Keep CSV files tracked
+# Analysis outputs (PDFs and Excel files)
+*.pdf
+*.xlsx
+
+# CSV files
 *.csv
+!data/dlc_table.csv
 
 # System files
 Thumbs.db
