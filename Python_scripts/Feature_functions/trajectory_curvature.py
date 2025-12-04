@@ -182,7 +182,7 @@ def batch_trajectory_curvature(dlc_table: pd.DataFrame,
     return curvature.astype(float).tolist(), mean_curv
 
 
-def batch_trajectory_curvature(conn: PGConnection,
+def batch_trajectory_curvature(dlc_table: pd.DataFrame,
                                trial_ids: List[int],
                                bodypart: str = 'Midback',
                                time_limit: float = None,   # <-- default None
@@ -193,7 +193,7 @@ def batch_trajectory_curvature(conn: PGConnection,
     Compute mean curvature for a list of trial IDs.
 
     Args:
-        conn: Active PostgreSQL connection.
+        dlc_table: DataFrame with trial metadata and CSV paths.
         trial_ids: List of trial IDs to process.
         bodypart: e.g., 'Head'
         time_limit: Time cap (seconds), None = full trajectory.
@@ -208,7 +208,7 @@ def batch_trajectory_curvature(conn: PGConnection,
     for tid in trial_ids:
         try:
             _, mean_curv = compute_trajectory_curvature(
-                conn, tid,
+                dlc_table, tid,
                 bodypart=bodypart,
                 time_limit=time_limit,
                 smooth=smooth,
