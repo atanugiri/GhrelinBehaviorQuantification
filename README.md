@@ -17,8 +17,7 @@ This repository contains a complete **CSV-based** analysis pipeline for quantify
 ```
 ├── DLC-Jupyter-Notebooks/     # Analysis notebooks
 │   ├── 2x_data_analysis.ipynb     # 2X dose analysis
-│   ├── 10x_data_analysis.ipynb    # 10X dose analysis
-│   └── [legacy notebooks]         # Archived analysis notebooks
+│   └── 10x_data_analysis.ipynb    # 10X dose analysis
 ├── Python_scripts/            # Core analysis modules
 │   ├── config.py                  # Project configuration & CSV loader
 │   ├── Feature_functions/         # Feature computation
@@ -39,6 +38,8 @@ This repository contains a complete **CSV-based** analysis pipeline for quantify
 
 ## Quick Start
 
+**Prerequisites:** Conda or Miniconda installed
+
 1. **Clone and setup environment:**
 ```bash
 git clone https://github.com/atanugiri/GhrelinBehaviorQuantification.git
@@ -47,14 +48,22 @@ conda env create -f environment.yml
 conda activate ghrelin
 ```
 
-2. **Launch Jupyter:**
-```bash
-jupyter lab
-```
+2. **Run analysis in VS Code or Jupyter Lab:**
 
-3. **Run notebooks:**
-   - Open `DLC-Jupyter-Notebooks/2x_data_analysis.ipynb` or `10x_data_analysis.ipynb`
-   - Execute cells sequentially
+   **Option A - VS Code (Recommended):**
+   - Open the project folder in VS Code
+   - Open any notebook in `DLC-Jupyter-Notebooks/`
+   - Select the `ghrelin` kernel from the kernel picker (top right)
+   - Run cells sequentially
+
+   **Option B - Jupyter Lab:**
+   ```bash
+   jupyter lab
+   ```
+   - Navigate to `DLC-Jupyter-Notebooks/`
+   - Open `2x_data_analysis.ipynb` or `10x_data_analysis.ipynb`
+   - Select the `ghrelin` kernel if prompted
+   - Execute cells in order
 
 ## Data
 
