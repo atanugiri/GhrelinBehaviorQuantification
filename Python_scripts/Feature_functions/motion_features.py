@@ -1,22 +1,23 @@
 import numpy as np
 import pandas as pd
 from typing import List, Tuple, Optional
-from psycopg2.extensions import connection as PGConnection
 
 
-def _get_fps(conn: PGConnection, table: str, trial_id: int) -> float:
-    """Fetch per-trial frame rate."""
-    df = pd.read_sql_query(
-        f"SELECT frame_rate FROM {table} WHERE id=%s;",
-        conn, params=(trial_id,)
-    )
-    if df.empty or pd.isna(df.iloc[0, 0]):
-        raise ValueError(f"Missing or invalid frame_rate for ID {trial_id}")
-    return float(df.iloc[0, 0])
+def _get_fps(dlc_table: pd.DataFrame, trial_id: int) -> float:
+    """Fetch per-trial frame rate from dlc_table DataFrame."""
+    row = dlc_table[dlc_table['id'] == trial_id]
+    if row.empty or 'frame_rate' not in row.columns:
+        raise ValueError(f"Missing frame_rate for ID {trial_id}")
+    
+    fps = row['frame_rate'].iloc[0]
+    if pd.isna(fps):
+        raise ValueError(f"Invalid frame_rate for ID {trial_id}")
+    
+    return float(fps)
 
 
-def compute_motion_features(conn: PGConnection, trial_id: int, 
-                            table='dlc_table', bodypart='Midback',
+def compute_motion_features(dlc_table: pd.DataFrame, trial_id: int, 
+                            bodypart='Midback',
                             time_limit: Optional[float] = None, 
                             smooth: bool = False, 
                             window: int = 5) -> Tuple[List[float], List[float], List[float]]:
@@ -28,7 +29,7 @@ def compute_motion_features(conn: PGConnection, trial_id: int,
 
     x_vals, y_vals = get_normalized_bodypart(
         trial_id=trial_id, 
-        conn=conn, 
+        dlc_table=dlc_table, 
         bodypart=bodypart, 
         normalize=True,
         interpolate=True
@@ -37,13 +38,8 @@ def compute_motion_features(conn: PGConnection, trial_id: int,
     if x_vals is None or y_vals is None:
         raise ValueError(f"Could not load normalized data for ID {trial_id}")
 
-    # Get frame rate from database
-    query = "SELECT frame_rate FROM dlc_table WHERE id = %s;"
-    df = pd.read_sql_query(query, conn, params=(trial_id,))
-    if df.empty or pd.isna(df['frame_rate'][0]):
-        raise ValueError(f"Missing or invalid frame_rate for ID {trial_id}")
-    
-    frame_rate = df['frame_rate'][0]
+    # Get frame rate from dlc_table
+    frame_rate = _get_fps(dlc_table, trial_id)
     t_vals = np.arange(len(x_vals)) / frame_rate
 
     if time_limit is not None:
@@ -81,9 +77,9 @@ def compute_motion_features(conn: PGConnection, trial_id: int,
 
 
 def batch_compute_motion_feature(
-    conn: PGConnection, 
+    dlc_table: pd.DataFrame, 
     trial_ids: List[int], 
-    table='dlc_table', bodypart='Midback',
+    bodypart='Midback',
     feature: str = 'distance',
     time_limit: Optional[float] = None, 
     smooth: bool = False, 
@@ -99,7 +95,7 @@ def batch_compute_motion_feature(
     for trial_id in trial_ids:
         try:
             dis, vel, acc = compute_motion_features(
-                conn, trial_id, table, bodypart, time_limit, smooth, window
+                dlc_table, trial_id, bodypart, time_limit, smooth, window
             )
             feature_map = {'distance': dis, 'velocity': vel, 'acceleration': acc}
             results.append(np.array(feature_map[feature]))
@@ -110,9 +106,8 @@ def batch_compute_motion_feature(
 
 
 def compute_motion_features_per_minute(
-    conn: PGConnection,
+    dlc_table: pd.DataFrame,
     trial_id: int,
-    table: str = 'dlc_table',
     bodypart: str = 'Midback',
     time_limit: Optional[float] = None,
     smooth: bool = False,
@@ -128,11 +123,11 @@ def compute_motion_features_per_minute(
     """
     # Get per-frame arrays via your existing function
     distance, velocity, _ = compute_motion_features(
-        conn=conn, trial_id=trial_id, table=table, bodypart=bodypart,
+        dlc_table=dlc_table, trial_id=trial_id, bodypart=bodypart,
         time_limit=time_limit, smooth=smooth, window=window
     )
 
-    fps = _get_fps(conn, table, trial_id)
+    fps = _get_fps(dlc_table, trial_id)
 
     # distance has length N-1 for N frames; duration (s) ~ len(distance)/fps
     frames_of_motion = len(distance)
@@ -166,9 +161,8 @@ def compute_motion_features_per_minute(
 
 
 def batch_compute_motion_features_per_minute(
-    conn: PGConnection,
+    dlc_table: pd.DataFrame,
     trial_ids: List[int],
-    table: str = 'dlc_table',
     bodypart: str = 'Midback',
     time_limit: Optional[float] = None,
     smooth: bool = False,
@@ -182,7 +176,7 @@ def batch_compute_motion_features_per_minute(
     for tid in trial_ids:
         try:
             vpm, diag = compute_motion_features_per_minute(
-                conn, tid, table=table, bodypart=bodypart,
+                dlc_table, tid, bodypart=bodypart,
                 time_limit=time_limit, smooth=smooth, window=window,
                 min_duration_s=min_duration_s, return_diagnostics=True
             )

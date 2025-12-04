@@ -13,6 +13,7 @@ Author: DeepLabCut Analysis Pipeline
 
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
 
 # Import utilities from the new db_utils module
@@ -43,6 +44,13 @@ def _unwrap(a: np.ndarray) -> np.ndarray:
 # ---------- I/O helpers ----------
 def _load_bodyparts_raw(csv_path: str, bodyparts: List[str], likelihood_threshold: float = 0.5) -> Dict[str, np.ndarray]:
     """Load and interpolate bodypart coordinates from DeepLabCut CSV file."""
+    # If path is relative, resolve it from project root
+    csv_path_obj = Path(csv_path)
+    if not csv_path_obj.is_absolute():
+        # Get project root (2 levels up from this file: angle_features.py -> Feature_functions -> Python_scripts -> root)
+        project_root = Path(__file__).resolve().parents[2]
+        csv_path = str(project_root / csv_path)
+    
     df = pd.read_csv(csv_path, header=[1, 2], index_col=0)
     out: Dict[str, np.ndarray] = {}
     for bp in bodyparts:
@@ -59,9 +67,8 @@ def _load_bodyparts_raw(csv_path: str, bodyparts: List[str], likelihood_threshol
 
 # ---------- core per-trial ----------
 def angle_features_for_trial(
-    conn,
+    dlc_table: pd.DataFrame,
     trial_id: int,
-    table: str = "dlc_table",
     likelihood_threshold: float = 0.5,
     smooth_window: Optional[int] = None,
 ) -> Tuple[Dict[str, np.ndarray], Dict[str, Dict[str, float]], np.ndarray]:
@@ -69,19 +76,18 @@ def angle_features_for_trial(
     Compute angle-based features for a single trial.
     
     Args:
-        conn: Database connection
+        dlc_table: DataFrame containing trial metadata
         trial_id: Trial identifier
-        table: Database table name
         likelihood_threshold: Minimum likelihood for pose data
         smooth_window: Window size for smoothing (optional)
     
     Returns:
         Tuple of (timeseries_dict, summary_dict, valid_frames)
     """
-    trial_length_s, frame_rate = get_trial_meta(conn, trial_id, table=table)
+    trial_length_s, frame_rate = get_trial_meta(dlc_table, trial_id)
     if frame_rate is None or not np.isfinite(frame_rate) or frame_rate <= 0:
-        raise ValueError(f"Missing/invalid frame_rate for trial {trial_id} in '{table}'.")
-    csv_path = get_csv_path(conn, trial_id, table=table)
+        raise ValueError(f"Missing/invalid frame_rate for trial {trial_id}.")
+    csv_path = get_csv_path(dlc_table, trial_id)
     
     # Optional debug output - remove in production
     # print(f"[INFO] csv path: {csv_path}")
@@ -166,9 +172,8 @@ def angle_features_for_trial(
 
 # ---------- batch processing ----------
 def batch_angle_features(
-    conn,
+    dlc_table: pd.DataFrame,
     id_list: List[int],
-    table: str = "dlc_table",
     likelihood_threshold: float = 0.5,
     smooth_window: Optional[int] = None,
 ) -> pd.DataFrame:
@@ -176,9 +181,8 @@ def batch_angle_features(
     Compute angle features for multiple trials.
     
     Args:
-        conn: Database connection
+        dlc_table: DataFrame containing trial metadata
         id_list: List of trial IDs to process
-        table: Database table name
         likelihood_threshold: Minimum likelihood for pose data
         smooth_window: Window size for smoothing (optional)
     
@@ -188,7 +192,7 @@ def batch_angle_features(
     rows: List[Dict[str, Any]] = []
     for tid in id_list:
         ts, sm, _ = angle_features_for_trial(
-            conn, tid, table=table,
+            dlc_table, tid,
             likelihood_threshold=likelihood_threshold,
             smooth_window=smooth_window,
         )
