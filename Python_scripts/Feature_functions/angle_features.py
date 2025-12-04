@@ -284,5 +284,4 @@ if __name__ == '__main__':
         
     except Exception as e:
         print(f"❌ Failed: {e}")
-        print("Make sure your database credentials are set in .env file")
         sys.exit(1)
