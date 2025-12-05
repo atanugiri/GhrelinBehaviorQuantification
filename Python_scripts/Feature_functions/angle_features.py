@@ -16,8 +16,14 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
 
-# Import utilities from the new db_utils module
-from .db_utils import get_trial_meta, get_csv_path
+# Import utilities from the new db_utils module (support both package and script execution)
+try:
+    from .db_utils import get_trial_meta, get_csv_path
+except Exception:
+    import sys
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).resolve().parents[2]))
+    from Python_scripts.Feature_functions.db_utils import get_trial_meta, get_csv_path
 
 # ---------- math utils ----------
 def _angle_of(v: np.ndarray) -> np.ndarray:
@@ -230,13 +236,13 @@ def batch_angle_features(
     return pd.DataFrame(rows)
 
 
-def main(conn, trial_id):
+def main(dlc_table: pd.DataFrame, trial_id: int):
     """
-    Simple demo of angle_features_for_trial().
+    Simple demo of angle_features_for_trial() using a dlc_table DataFrame.
     
     Args:
-        conn: Database connection (required)
-        trial_id: Trial ID to analyze (required)
+        dlc_table: DataFrame containing trial metadata
+        trial_id: Trial ID to analyze
     """
     print("Angle Features Demo")
     print("=" * 30)
@@ -244,7 +250,7 @@ def main(conn, trial_id):
     
     try:
         print(f"🧮 Computing angle features for trial {trial_id}...")
-        timeseries, summary, valid = angle_features_for_trial(conn, trial_id)
+        timeseries, summary, valid = angle_features_for_trial(dlc_table, trial_id)
         
         print(f"✅ Success! Processed {len(timeseries['theta_body'])} frames")
         print(f"📈 Head-body misalignment (mean): {summary['head_body_misalignment']['mean']:.3f} rad")
@@ -252,7 +258,7 @@ def main(conn, trial_id):
         
     except Exception as e:
         print(f"❌ Error: {e}")
-        print("Check trial ID, CSV file, and database connection")
+        print("Check trial ID and CSV file path in dlc_table")
 
 
 if __name__ == '__main__':
@@ -265,7 +271,7 @@ if __name__ == '__main__':
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
     
-    from Python_scripts.config import get_conn
+    from Python_scripts.config import load_dlc_table
     
     parser = argparse.ArgumentParser(description='Run angle features analysis on a trial')
     parser.add_argument('trial_id', type=int, help='Trial ID to analyze')
@@ -273,15 +279,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     try:
-        print("🔗 Connecting to database...")
-        conn = get_conn()
-        print(f"✅ Connected! Running analysis for trial {args.trial_id}")
-        
-        main(conn, args.trial_id)
-        
-        conn.close()
-        print("🔗 Database connection closed")
-        
+        dlc_table = load_dlc_table()
+        print(f"✅ Loaded dlc_table. Running analysis for trial {args.trial_id}")
+        main(dlc_table, args.trial_id)
     except Exception as e:
         print(f"❌ Failed: {e}")
         sys.exit(1)
