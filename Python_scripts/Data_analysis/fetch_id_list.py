@@ -117,3 +117,34 @@ def fetch_id_list(
         Inh_id     = _run("inhibitory", health="ghrelin", modulation="Inhibitory")
 
     return saline_id, ghrelin_id, Exc_id, Inh_id
+
+# --- Main Test Block ----------------------------------------------------------
+
+if __name__ == "__main__":
+    import sys
+    from pathlib import Path
+    # Add project root to sys.path for module imports
+    sys.path.append(str(Path(__file__).resolve().parents[2]))
+    from Python_scripts.config import load_dlc_table
+
+    # Load dlc_table.csv (default location)
+    try:
+        dlc_table = load_dlc_table()
+    except Exception as e:
+        print(f"Error loading dlc_table.csv: {e}")
+        sys.exit(1)
+
+    # Example usage: fetch IDs for LightOnly, dose_mult=10, genotype='white'
+    saline_id, ghrelin_id, Exc_id, Inh_id = fetch_id_list(
+        dlc_table,
+        task_name="FoodOnly",
+        dose_mult=2,
+        genotype="white",
+        bad_ids=None,
+        csv_prefix=None,
+        min_trial_length=None
+    )
+    print(f"Saline IDs: {saline_id}")
+    print(f"Ghrelin IDs: {ghrelin_id}")
+    print(f"Excitatory IDs: {Exc_id}")
+    print(f"Inhibitory IDs: {Inh_id}")
