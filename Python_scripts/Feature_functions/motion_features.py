@@ -187,3 +187,30 @@ def batch_compute_motion_features_per_minute(
             continue
 
     return pd.DataFrame(rows)
+
+
+# --- Main Test Block ----------------------------------------------------------
+if __name__ == "__main__":
+    import sys
+    from pathlib import Path
+    # Ensure project root is importable for Python_scripts package
+    sys.path.append(str(Path(__file__).resolve().parents[2]))
+    from Python_scripts.config import load_dlc_table
+
+    try:
+        dlc_table = load_dlc_table()
+    except Exception as e:
+        print(f"Error loading dlc_table.csv: {e}")
+        sys.exit(1)
+
+    # Pick a sample trial id
+    sample_id = int(dlc_table['id'].iloc[0])
+    print(f"Running motion feature tests for trial ID {sample_id}")
+    try:
+        dis, vel, acc = compute_motion_features(dlc_table, sample_id)
+        print(f"distance len: {len(dis)}, velocity len: {len(vel)}, acceleration len: {len(acc)}")
+        vpm, diag = compute_motion_features_per_minute(dlc_table, sample_id, return_diagnostics=True)
+        print(f"velocity per min: {vpm}")
+        print(f"diagnostics: {diag}")
+    except Exception as e:
+        print(f"Test failed: {e}")
