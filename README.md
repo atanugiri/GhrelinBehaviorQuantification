@@ -6,12 +6,6 @@ Behavioral analysis pipeline for DeepLabCut pose-estimation data from ghrelin ex
 
 This repository contains a complete **CSV-based** analysis pipeline for quantifying behavioral features from DeepLabCut tracking data. The pipeline computes motion features (velocity, distance), trajectory curvature, and head-body angle features, with statistical comparisons across experimental groups.
 
-**Key Features:**
-- Pure CSV workflow (no database required)
-- Minimal Python environment (Python 3.10, pandas, numpy, scipy, matplotlib, seaborn, opencv)
-- Reproducible analyses with tracked metadata
-- Statistical testing with Welch's t-test and effect sizes
-
 ## Repository Structure
 
 ```
@@ -30,9 +24,8 @@ This repository contains a complete **CSV-based** analysis pipeline for quantify
 │       ├── plot_groupwise_bar.py
 │       └── normalized_bodypart.py
 ├── data/                      # Data directory
-│   ├── dlc_table.csv             # Trial metadata
-│   ├── WhiteAnimals/             # DeepLabCut CSVs
-│   └── BlackAnimals/             # DeepLabCut CSVs
+│   ├── dlc_table.csv             # Trial metadata (tracked in repo)
+│   └── DlcDataPytorchFiltered/   # DeepLabCut CSV outputs (by strain/magnification)
 └── environment.yml            # Conda environment
 ```
 
@@ -65,22 +58,6 @@ conda activate ghrelin
    - Select the `ghrelin` kernel if prompted
    - Execute cells in order
 
-## Data
-
-**DeepLabCut pose-estimation CSVs:**  
-Available at Harvard Dataverse: https://doi.org/10.7910/DVN/G8CBKJ
-
-**Trial metadata:**  
-`data/dlc_table.csv` contains trial IDs, experimental conditions, and CSV paths. This file is tracked in the repository.
-
-**Directory structure:**  
-The `data/` folder should contain:
-- `dlc_table.csv` - Trial metadata
-- `WhiteAnimals/` - DeepLabCut tracking CSVs organized by task
-- `BlackAnimals/` - DeepLabCut tracking CSVs organized by task
-
-CSV paths in `dlc_table.csv` are relative (e.g., `data/WhiteAnimals/ToyOnly/...`) and automatically resolved by `config.py`.
-
 ## Analysis Notebooks
 
 ### Main Analysis Notebooks
@@ -101,26 +78,19 @@ Both notebooks:
 - Generate PDF plots and Excel exports
 - Use Welch's t-test for statistical comparisons
 
-## Statistical Analysis
+## Data
 
-All comparisons use **Welch's t-test** (unpaired, unequal variance) via `scipy.stats.ttest_ind(equal_var=False)`. The `plot_groupwise_bar()` function computes:
-- Test statistics and p-values
-- Cohen's d effect sizes
-- Significance annotations (*, **, ***)
+**DeepLabCut pose-estimation CSVs:**
+See `data/DATA_README.md` for download, extraction, and archive details for the DeepLabCut CSVs (the archive is named `DlcDataPytorchFiltered.zip`).
 
-## Output Files
+**Trial metadata:**
+`data/dlc_table.csv` contains trial IDs, experimental conditions, and CSV paths. This file is tracked in the repository and may be regenerated from raw video/CSV metadata using the `DLCDatabaseSetup` repository tools:
 
-Notebooks generate in the working directory:
-- **PDF figures**: `White_{dose}_{task}_{feature}.pdf` (e.g., `White_10X_AllTask_velocity.pdf`)
-- **Excel files**: `{dose}_White_{task}_{comparison}_{feature}.xlsx` (optional export)
+https://github.com/atanugiri/DLCDatabaseSetup/tree/main
 
-## Development
+**Directory structure:**
+The `data/` folder should contain:
+- `dlc_table.csv` - Trial metadata
+- `DlcDataPytorchFiltered/` - DeepLabCut CSV outputs, organized by strain/magnification and task (e.g., `WhiteAnimals10X/FoodOnly/...`)
 
-- Run notebooks from repository root for correct imports
-- Module structure: Notebooks → Feature functions → Utilities
-- CSV-only mode (no database required)
-- All paths are resolved automatically by `config.py`
-
-## Contact
-
-Repository: https://github.com/atanugiri/GhrelinBehaviorQuantification
+CSV paths in `dlc_table.csv` are relative (e.g., `data/DlcDataPytorchFiltered/WhiteAnimals10X/FoodOnly/...`) and are resolved by `config.py`.
