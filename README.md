@@ -83,11 +83,6 @@ Both notebooks:
 **DeepLabCut pose-estimation CSVs:**
 See `data/DATA_README.md` for download, extraction, and archive details for the DeepLabCut CSVs (the archive is named `DlcDataPytorchFiltered.zip`).
 
-**Trial metadata:**
-`data/dlc_table.csv` contains trial IDs, experimental conditions, and CSV paths. This file is tracked in the repository and may be regenerated from raw video/CSV metadata using the `DLCDatabaseSetup` repository tools:
-
-https://github.com/atanugiri/DLCDatabaseSetup/tree/main
-
 **Directory structure:**
 The `data/` folder should contain:
 - `dlc_table.csv` - Trial metadata
