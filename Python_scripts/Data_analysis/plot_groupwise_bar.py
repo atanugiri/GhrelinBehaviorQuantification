@@ -3,7 +3,7 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 from typing import Iterable, List, Tuple, Dict, Optional
-from scipy.stats import ranksums, ttest_ind
+from scipy.stats import ranksums, ttest_ind, f_oneway
 
 # ---------------- Utilities ----------------
 
@@ -76,6 +76,38 @@ def _pair_stats(a: pd.Series, b: pd.Series, tests=("ranksums","ttest")) -> Dict[
         out["rank_biserial"] = _rank_biserial_from_ranksums(avals, bvals)
     return out
 
+def _anova_stats(groups: List[np.ndarray]) -> Dict[str, float]:
+    groups = [np.asarray(g, dtype=float) for g in groups if len(g) > 0]
+    out = {
+        "df_between": np.nan,
+        "df_within": np.nan,
+        "f_anova": np.nan,
+        "p_anova": np.nan,
+        "eta_sq": np.nan,
+    }
+    if len(groups) < 2:
+        return out
+
+    n_total = sum(len(g) for g in groups)
+    k = len(groups)
+    if n_total <= k:
+        return out
+
+    f_stat, p_val = f_oneway(*groups)
+    all_vals = np.concatenate(groups)
+    grand_mean = np.mean(all_vals)
+    ss_between = sum(len(g) * (np.mean(g) - grand_mean) ** 2 for g in groups)
+    ss_total = np.sum((all_vals - grand_mean) ** 2)
+
+    out.update({
+        "df_between": float(k - 1),
+        "df_within": float(n_total - k),
+        "f_anova": float(f_stat),
+        "p_anova": float(p_val),
+        "eta_sq": float(ss_between / ss_total) if ss_total > 0 else np.nan,
+    })
+    return out
+
 # ---------------- Main plot function ----------------
 
 def plot_groupwise_bar(
@@ -103,6 +135,7 @@ def plot_groupwise_bar(
         ['group_a', 'group_b', 'n_a','n_b','mean_a','mean_b',
          'cohens_d','rank_biserial','t','p_ttest','z_rs','p_rs',
          'p_displayed','stars','p_displayed_fdr']
+    Overall ANOVA summary is stored in stats_df.attrs['anova'].
     """
     if y not in df.columns or 'group' not in df.columns:
         raise ValueError("DataFrame must contain columns: 'group' and the feature column.")
@@ -134,6 +167,10 @@ def plot_groupwise_bar(
             data=df, x='group', y=y, order=order,
             dodge=False, alpha=0.5, size=4, ax=ax, color='k'
         )
+
+    # --- Overall one-way ANOVA ---
+    group_values = [df.loc[df['group'] == g, y].dropna().values for g in order]
+    anova_res = _anova_stats(group_values)
 
     # Show sample sizes under tick labels
     ns = df.groupby('group')[y].apply(lambda s: s.dropna().size).reindex(order)
@@ -178,8 +215,21 @@ def plot_groupwise_bar(
         'cohens_d','rank_biserial','t','p_ttest','z_rs','p_rs',
         'p_displayed','stars','p_displayed_fdr'
     ]).fillna(value={'p_displayed_fdr': np.nan})
+    stats_df.attrs['anova'] = anova_res
+    stats_df.attrs['posthoc_method'] = 'pairwise_welch_ttests'
 
     # --- Annotations on the plot ---
+    if pd.notna(anova_res.get('p_anova', np.nan)):
+        anova_text = (
+            f"1-way ANOVA: F({int(anova_res['df_between'])}, {int(anova_res['df_within'])}) = "
+            f"{anova_res['f_anova']:.3g}, p = {anova_res['p_anova']:.3g}"
+        )
+        ax.text(
+            0.01, 0.99, anova_text,
+            transform=ax.transAxes, ha='left', va='top', fontsize=9,
+            bbox=dict(boxstyle='round,pad=0.25', facecolor='white', alpha=0.8, edgecolor='none')
+        )
+
     if comps:
         ymin, ymax = ax.get_ylim()
         yspan = ymax - ymin
