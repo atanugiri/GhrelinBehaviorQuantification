@@ -187,7 +187,7 @@ def run_curvature_analysis(
         f"{smooth_tag}_w{window}_{time_tag}.csv"
     )
 
-    csv_df = out_df[["id", "mean_curvature", "group", "task", "dose_mult"]].copy()
+    csv_df = out_df[["task", "group", "dose_mult", "mean_curvature"]].copy()
     csv_df.to_csv(out_path, index=False)
 
     plot_df = out_df[["group", "mean_curvature"]].copy().rename(columns={"mean_curvature": "mean_curvature"})
