@@ -25,26 +25,6 @@ def _parse_task_names(values: list[str]) -> list[str]:
     return task_names
 
 
-def _format_plot_stats(stats_df: pd.DataFrame) -> str:
-    lines = []
-    anova = stats_df.attrs.get("anova", {})
-    if anova:
-        lines.append(
-            "1-way ANOVA: F(" 
-            f"{int(anova.get('df_between', 0))}, {int(anova.get('df_within', 0))}) = "
-            f"{anova.get('f_anova', float('nan')):.3g}, p = {anova.get('p_anova', float('nan')):.3g}"
-        )
-
-    for _, row in stats_df.iterrows():
-        group_a = row.get("group_a", "Group A")
-        group_b = row.get("group_b", "Group B")
-        t_val = row.get("t", float("nan"))
-        p_val = row.get("p_ttest", float("nan"))
-        lines.append(f"t-test {group_a} vs {group_b}: t = {t_val:.3g}, p = {p_val:.3g}")
-
-    return "\n".join(lines) if lines else "No statistics available."
-
-
 
 
 def build_parser() -> argparse.ArgumentParser:
