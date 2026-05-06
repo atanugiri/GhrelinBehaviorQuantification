@@ -7,7 +7,7 @@ PY=python3
 
 TASKS=(FoodOnly ToyOnly LightOnly FoodLight ToyLight)
 DOSE=2
-PLOT_GROUPS=(Saline Ghrelin)
+PLOT_GROUPS=(Saline Excitatory)
 RESULTS_DIR=results/curvature_runs
 LOGDIR=logs/curvature_runs
 mkdir -p "$RESULTS_DIR" "$LOGDIR"
