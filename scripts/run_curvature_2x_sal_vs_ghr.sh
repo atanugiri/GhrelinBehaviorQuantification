@@ -8,8 +8,8 @@ PY=python3
 TASKS=(FoodOnly ToyOnly LightOnly FoodLight ToyLight)
 DOSE=2
 PLOT_GROUPS=(Saline Ghrelin)
-RESULTS_DIR=results/curvature_runs
-LOGDIR=logs/curvature_runs
+RESULTS_DIR=results/angle_runs
+LOGDIR=logs/angle_runs
 mkdir -p "$RESULTS_DIR" "$LOGDIR"
 
 # activate conda env (works in interactive shells)
@@ -21,7 +21,7 @@ for t in "${TASKS[@]}"; do
   OUTDIR="$RESULTS_DIR"
   mkdir -p "$OUTDIR"
   LOG="$LOGDIR/${t}.log"
-  $PY -m pipelines.run_curvature_analysis \
+  $PY -m pipelines.run_angle_analysis \
     --task-name "$t" \
     --dose-mult "$DOSE" \
     --plot-groups "${PLOT_GROUPS[@]}" \

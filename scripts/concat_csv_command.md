@@ -1,9 +1,18 @@
 ```
 python -m pipelines.concat_csvs \
-results/curvature_runs/curvature_FoodOnly_dose10_white_Midback_smooth_w23_all.csv \
-results/curvature_runs/curvature_ToyOnly_dose10_white_Midback_smooth_w23_all.csv \
-results/curvature_runs/curvature_LightOnly_dose10_white_Midback_smooth_w23_all.csv \
-results/curvature_runs/curvature_FoodLight_dose10_white_Midback_smooth_w23_all.csv \
-results/curvature_runs/curvature_ToyLight_dose10_white_Midback_smooth_w23_all.csv \
---output 10x_curvature_analysis_saline_vs_ghrelin.csv
+results/angle_runs/angle_FoodOnly_dose2_white_wNone_all.csv \
+results/angle_runs/angle_ToyOnly_dose2_white_wNone_all.csv \
+results/angle_runs/angle_LightOnly_dose2_white_wNone_all.csv \
+results/angle_runs/angle_FoodLight_dose2_white_wNone_all.csv \
+results/angle_runs/angle_ToyLight_dose2_white_wNone_all.csv \
+--output 2x_angle_analysis_saline_vs_excitatory.csv
+```
+
+```
+python -m pipelines.run_angle_analysis \      
+  --task-name FoodOnly ToyOnly LightOnly FoodLight ToyLight \
+  --dose-mult 2 \
+  --plot-groups Saline Inhibitory \
+  --results-dir results/angle_runs \
+  --min-trial-length 0
 ```
