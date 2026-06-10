@@ -25,7 +25,7 @@ def compute_motion_features(dlc_table: pd.DataFrame, trial_id: int,
     Compute framewise motion features: distance, velocity, and acceleration
     using normalized bodypart coordinates from get_normalized_bodypart().
     """
-    from scripts.Data_analysis.normalized_bodypart import get_normalized_bodypart
+    from scripts.analysis.normalized_bodypart import get_normalized_bodypart
 
     x_vals, y_vals = get_normalized_bodypart(
         trial_id=trial_id, 

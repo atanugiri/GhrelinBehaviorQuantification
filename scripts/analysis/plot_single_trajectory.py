@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from scripts.Data_analysis.normalized_bodypart import get_normalized_bodypart
+from scripts.analysis.normalized_bodypart import get_normalized_bodypart
 
 def plot_single_trajectory(conn, trial_id, bodypart='Midback', table='dlc_table',
                            normalize=True, interpolate=True, likelihood_threshold=0.5,

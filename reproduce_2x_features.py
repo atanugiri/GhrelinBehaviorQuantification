@@ -21,13 +21,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from scripts.config import load_dlc_table
-from scripts.Data_analysis.fetch_id_list import fetch_id_list
-from scripts.Data_analysis.plot_groupwise_bar import plot_groupwise_bar
-from scripts.Feature_functions.angle_features import batch_angle_features
-from scripts.Feature_functions.motion_features import (
+from scripts.analysis.fetch_id_list import fetch_id_list
+from scripts.analysis.plot_groupwise_bar import plot_groupwise_bar
+from scripts.features.angle_features import batch_angle_features
+from scripts.features.motion_features import (
     batch_compute_motion_features_per_minute,
 )
-from scripts.Feature_functions.trajectory_curvature import (
+from scripts.features.trajectory_curvature import (
     batch_trajectory_curvature,
 )
 

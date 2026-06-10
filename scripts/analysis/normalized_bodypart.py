@@ -36,7 +36,7 @@ def get_normalized_bodypart(trial_id, dlc_table, bodypart='Midback',
     
     # If path is relative, resolve it from project root
     if not Path(csv_path).is_absolute():
-        # Get project root (2 levels up: normalized_bodypart.py -> Data_analysis -> scripts -> root)
+        # Get project root (2 levels up: normalized_bodypart.py -> analysis -> scripts -> root)
         project_root = Path(__file__).resolve().parents[2]
         csv_path = str(project_root / csv_path)
 

@@ -4,13 +4,13 @@ from scipy.ndimage import uniform_filter1d
 from typing import Tuple, List
 
 try:
-    from scripts.Data_analysis.normalized_bodypart import get_normalized_bodypart
+    from scripts.analysis.normalized_bodypart import get_normalized_bodypart
 except Exception:
     # If running as a script, ensure project root is on sys.path then retry
     import sys
     from pathlib import Path
     sys.path.append(str(Path(__file__).resolve().parents[2]))
-    from scripts.Data_analysis.normalized_bodypart import get_normalized_bodypart
+    from scripts.analysis.normalized_bodypart import get_normalized_bodypart
 
 
 def _get_frame_rate(dlc_table: pd.DataFrame, trial_id: int) -> float:

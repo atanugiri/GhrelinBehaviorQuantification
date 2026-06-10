@@ -23,7 +23,7 @@ except Exception:
     import sys
     from pathlib import Path
     sys.path.append(str(Path(__file__).resolve().parents[2]))
-    from scripts.Feature_functions.db_utils import get_trial_meta, get_csv_path
+    from scripts.features.db_utils import get_trial_meta, get_csv_path
 
 # ---------- math utils ----------
 def _angle_of(v: np.ndarray) -> np.ndarray:
@@ -53,7 +53,7 @@ def _load_bodyparts_raw(csv_path: str, bodyparts: List[str], likelihood_threshol
     # If path is relative, resolve it from project root
     csv_path_obj = Path(csv_path)
     if not csv_path_obj.is_absolute():
-        # Get project root (2 levels up from this file: angle_features.py -> Feature_functions -> scripts -> root)
+        # Get project root (2 levels up from this file: angle_features.py -> features -> scripts -> root)
         project_root = Path(__file__).resolve().parents[2]
         csv_path = str(project_root / csv_path)
     

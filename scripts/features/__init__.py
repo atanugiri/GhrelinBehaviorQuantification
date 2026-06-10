@@ -14,7 +14,7 @@ Main modules:
 from .db_utils import get_trial_meta, get_csv_path
 from .angle_features import angle_features_for_trial, batch_angle_features
 
-# Make these available when someone does: from Feature_functions import *
+# Make these available when someone does: from features import *
 __all__ = [
     'angle_features_for_trial',
     'batch_angle_features', 

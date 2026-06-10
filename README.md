@@ -13,12 +13,12 @@ This repository contains a complete **CSV-based** analysis pipeline for quantify
 ├── runme.sh                   # One-shot script to reproduce all results
 ├── scripts/                   # Core analysis modules
 │   ├── config.py                  # Project configuration & CSV loader
-│   ├── Feature_functions/         # Feature computation
+│   ├── features/         # Feature computation
 │   │   ├── motion_features.py
 │   │   ├── trajectory_curvature.py
 │   │   ├── angle_features.py
 │   │   └── db_utils.py
-│   └── Data_analysis/             # Analysis utilities
+│   └── analysis/             # Analysis utilities
 │       ├── fetch_id_list.py
 │       ├── plot_groupwise_bar.py
 │       └── normalized_bodypart.py
