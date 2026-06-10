@@ -3,7 +3,7 @@ import numpy as np
 
 from scripts.analysis.normalized_bodypart import get_normalized_bodypart
 
-def plot_single_trajectory(conn, trial_id, bodypart='Midback', table='dlc_table',
+def plot_single_trajectory(dlc_table, trial_id, bodypart='Midback',
                            normalize=True, interpolate=True, likelihood_threshold=0.5,
                            use_homography=False,
                            label=None, color=None, style='line',
@@ -14,7 +14,7 @@ def plot_single_trajectory(conn, trial_id, bodypart='Midback', table='dlc_table'
     """
     # Load and optionally normalize/interpolate bodypart coordinates
     x, y = get_normalized_bodypart(
-        trial_id, conn, bodypart=bodypart, table=table,
+        trial_id, dlc_table, bodypart=bodypart,
         likelihood_threshold=likelihood_threshold,
         normalize=normalize, interpolate=interpolate, 
         use_homography=use_homography,
