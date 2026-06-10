@@ -28,4 +28,4 @@ python run_analysis.py --dose-mult 10 --feature angle --tasks AllTask
 python run_analysis.py --dose-mult 10 --feature angle
 
 # Trajectory (individual curvature examples)
-python -m scripts.analysis.plot_trajectories
+# python -m scripts.analysis.plot_trajectories

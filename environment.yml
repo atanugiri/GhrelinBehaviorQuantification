@@ -7,9 +7,8 @@ dependencies:
   - pandas
   - numpy
   - scipy
+  - statsmodels
   - matplotlib
   - seaborn
-  - jupyter
-  - jupyterlab
-  - openpyxl  # For Excel export
-  - opencv  # For loading DeepLabCut tracking data
+  - openpyxl
+  - opencv
