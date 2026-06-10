@@ -12,7 +12,7 @@ import pandas as pd
 
 
 def get_project_root() -> Path:
-    """Return the project root directory (parent of Python_scripts/)."""
+    """Return the project root directory (parent of scripts/)."""
     return Path(__file__).resolve().parents[1]
 
 

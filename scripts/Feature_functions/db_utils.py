@@ -64,7 +64,7 @@ def get_csv_path(dlc_table: pd.DataFrame, trial_id: int) -> str:
     
     # If path is relative, resolve it from project root
     if not Path(csv_path).is_absolute():
-        # Get project root (2 levels up from this file: db_utils.py -> Feature_functions -> Python_scripts -> root)
+        # Get project root (2 levels up from this file: db_utils.py -> Feature_functions -> scripts -> root)
         project_root = Path(__file__).resolve().parents[2]
         csv_path = str(project_root / csv_path)
     

@@ -25,7 +25,7 @@ def compute_motion_features(dlc_table: pd.DataFrame, trial_id: int,
     Compute framewise motion features: distance, velocity, and acceleration
     using normalized bodypart coordinates from get_normalized_bodypart().
     """
-    from Python_scripts.Data_analysis.normalized_bodypart import get_normalized_bodypart
+    from scripts.Data_analysis.normalized_bodypart import get_normalized_bodypart
 
     x_vals, y_vals = get_normalized_bodypart(
         trial_id=trial_id, 
@@ -193,9 +193,9 @@ def batch_compute_motion_features_per_minute(
 if __name__ == "__main__":
     import sys
     from pathlib import Path
-    # Ensure project root is importable for Python_scripts package
+    # Ensure project root is importable for scripts package
     sys.path.append(str(Path(__file__).resolve().parents[2]))
-    from Python_scripts.config import load_dlc_table
+    from scripts.config import load_dlc_table
 
     try:
         dlc_table = load_dlc_table()

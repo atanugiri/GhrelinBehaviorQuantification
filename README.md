@@ -4,15 +4,14 @@ Behavioral analysis pipeline for DeepLabCut pose-estimation data from ghrelin ex
 
 ## Overview
 
-This repository contains a complete **CSV-based** analysis pipeline for quantifying behavioral features from DeepLabCut tracking data. The pipeline computes motion features (velocity, distance), trajectory curvature, and head-body angle features, with statistical comparisons across experimental groups.
+This repository contains a complete **CSV-based** analysis pipeline for quantifying behavioral features from DeepLabCut tracking data. The pipeline computes speed, trajectory curvature, and head-body angle features, with statistical comparisons across experimental groups (Saline vs Ghrelin, and optionally Saline vs Inhibitory vs Excitatory).
 
 ## Repository Structure
 
 ```
-├── DLC-Jupyter-Notebooks/     # Analysis notebooks
-│   ├── 2x_data_analysis.ipynb     # 2X dose analysis
-│   └── 10x_data_analysis.ipynb    # 10X dose analysis
-├── Python_scripts/            # Core analysis modules
+├── reproduce_2x_features.py   # Main entrypoint — run all analyses
+├── runme.sh                   # One-shot script to reproduce all results
+├── scripts/                   # Core analysis modules
 │   ├── config.py                  # Project configuration & CSV loader
 │   ├── Feature_functions/         # Feature computation
 │   │   ├── motion_features.py
@@ -26,6 +25,10 @@ This repository contains a complete **CSV-based** analysis pipeline for quantify
 ├── data/                      # Data directory
 │   ├── dlc_table.csv             # Trial metadata (tracked in repo)
 │   └── DlcDataPytorchFiltered/   # DeepLabCut CSV outputs (by strain/magnification)
+├── results/                   # Output directory (generated on run)
+│   ├── curvature/
+│   ├── speed/
+│   └── angle/
 └── environment.yml            # Conda environment
 ```
 
@@ -41,42 +44,57 @@ conda env create -f environment.yml
 conda activate ghrelin
 ```
 
-2. **Run analysis in VS Code or Jupyter Lab:**
+2. **Reproduce all results:**
+```bash
+bash runme.sh
+```
+This runs all features (curvature, speed, angle) for both 2X and 10X dose conditions and saves outputs to `results/`.
 
-   **Option A - VS Code (Recommended):**
-   - Open the project folder in VS Code
-   - Open any notebook in `DLC-Jupyter-Notebooks/`
-   - Select the `ghrelin` kernel from the kernel picker (top right)
-   - Run cells sequentially
+## Analysis Script
 
-   **Option B - Jupyter Lab:**
-   ```bash
-   jupyter lab
-   ```
-   - Navigate to `DLC-Jupyter-Notebooks/`
-   - Open `2x_data_analysis.ipynb` or `10x_data_analysis.ipynb`
-   - Select the `ghrelin` kernel if prompted
-   - Execute cells in order
+`reproduce_2x_features.py` is the single entrypoint for all analyses.
 
-## Analysis Notebooks
+**Usage:**
+```bash
+python reproduce_2x_features.py [--feature FEATURE] [--dose-mult N] [--tasks TASK [TASK ...]] [--include-chemo] [--outdir DIR] [--bad-ids ID [ID ...]] [--min-trial-length N]
+```
 
-### Main Analysis Notebooks
+**Key options:**
 
-- **`2x_data_analysis.ipynb`**: Analyzes 2X dose experiments
-  - Compares Saline vs Ghrelin groups
-  - Computes velocity, curvature, and angle features
-  - Generates statistical plots for all task conditions
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--feature` | `curvature` | Feature to analyze: `curvature`, `speed`, or `angle` |
+| `--dose-mult` | `2` | Dose multiplier: `2` for 2X, `10` for 10X |
+| `--tasks` | all 5 tasks | Space-separated task names, or `AllTask` for all five |
+| `--include-chemo` | off | Also run Saline vs Inhibitory vs Excitatory comparison |
+| `--outdir` | `results` | Base output directory; outputs go to `<outdir>/<feature>/` |
+| `--bad-ids` | preset list | Trial IDs to exclude |
 
-- **`10x_data_analysis.ipynb`**: Analyzes 10X dose experiments
-  - Compares Saline vs Ghrelin groups
-  - Same feature analyses as 2X notebook
-  - Handles NaN modulation values correctly
+**Examples:**
+```bash
+# 2X curvature, all tasks, Saline vs Ghrelin
+python reproduce_2x_features.py --feature curvature --tasks AllTask
 
-Both notebooks:
-- Load data from `dlc_table.csv` 
-- Support all task conditions: AllTask, FoodOnly, FoodLight, ToyOnly, ToyLight, LightOnly
-- Generate PDF plots and Excel exports
-- Use Welch's t-test for statistical comparisons
+# 2X speed, specific tasks, including chemo comparison
+python reproduce_2x_features.py --feature speed --tasks FoodOnly ToyOnly --include-chemo
+
+# 10X angle, all tasks
+python reproduce_2x_features.py --feature angle --dose-mult 10 --tasks AllTask
+```
+
+**Output files** are saved as `results/<feature>/White_<N>X_<task>_<comparison>_<feature>.{xlsx,pdf}`.
+
+## Features
+
+- **Curvature**: Mean trajectory curvature using `Midback` bodypart, smoothing window 23
+- **Speed**: Velocity per minute using `Head` bodypart, window 5, no smoothing
+- **Angle**: Head-body misalignment (p95) with likelihood threshold 0.65
+
+All comparisons use Welch's t-test. Per-task XLSX tables and PDF bar plots are saved for each run.
+
+## Task Conditions
+
+Five task conditions are supported: `FoodOnly`, `FoodLight`, `ToyOnly`, `ToyLight`, `LightOnly`. `AllTask` is a shorthand for all five combined.
 
 ## Data
 
@@ -85,7 +103,7 @@ See `data/DATA_README.md` for download, extraction, and archive details for the 
 
 **Directory structure:**
 The `data/` folder should contain:
-- `dlc_table.csv` - Trial metadata
-- `DlcDataPytorchFiltered/` - DeepLabCut CSV outputs, organized by strain/magnification and task (e.g., `WhiteAnimals10X/FoodOnly/...`)
+- `dlc_table.csv` — trial metadata
+- `DlcDataPytorchFiltered/` — DeepLabCut CSV outputs, organized by strain/magnification and task (e.g., `WhiteAnimals10X/FoodOnly/...`)
 
-CSV paths in `dlc_table.csv` are relative (e.g., `data/DlcDataPytorchFiltered/WhiteAnimals10X/FoodOnly/...`) and are resolved by `config.py`.
+CSV paths in `dlc_table.csv` are relative and resolved by `config.py`.
