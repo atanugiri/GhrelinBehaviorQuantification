@@ -137,10 +137,10 @@ if __name__ == "__main__":
     # Example usage: fetch IDs for LightOnly, dose_mult=10, genotype='white'
     saline_id, ghrelin_id, Exc_id, Inh_id = fetch_id_list(
         dlc_table,
-        task_name="FoodOnly",
+        task_name="ToyOnly",
         dose_mult=2,
         genotype="white",
-        bad_ids=None,
+        bad_ids=[120, 130, 137, 138, 141, 142, 166, 289, 293, 310, 312],
         csv_prefix=None,
         min_trial_length=None
     )

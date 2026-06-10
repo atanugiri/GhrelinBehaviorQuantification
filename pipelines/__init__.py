@@ -1,3 +1,0 @@
-"""
-CLI pipeline entry points.
-"""
